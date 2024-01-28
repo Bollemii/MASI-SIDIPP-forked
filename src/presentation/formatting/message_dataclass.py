@@ -1,4 +1,3 @@
-from typing import Any
 from dataclasses import dataclass
 
 from src.presentation.formatting.message_header import MessageHeader
@@ -6,7 +5,7 @@ from src.presentation.formatting.message_header import MessageHeader
 
 @dataclass
 class MessageDataclass:
-    """The dataclass of all messages type"""
+    """Class to represent a message object"""
 
     header: MessageHeader
-    content: Any
+    content: str | None = None

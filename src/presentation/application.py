@@ -23,6 +23,8 @@ from src.application.use_cases.read_communities import ReadCommunities
 from src.application.use_cases.read_ideas_from_community import ReadIdeasFromCommunity
 from src.application.use_cases.read_opinions import ReadOpinions
 from src.application.use_cases.create_idea import CreateIdea
+from src.presentation.formatting.message_formatter import MessageFormatter
+from src.presentation.handler.message_handler import MessageHandler
 from src.presentation.network.server import Server
 from src.presentation.views.menus.main_menu import MainMenu
 
@@ -43,6 +45,8 @@ class Application:
         self.member_repository = MemberRepository(base_path)
         self.idea_repository = IdeaRepository(base_path)
         self.opinion_repository = OpinionRepository(base_path)
+
+        self.message_formatter = MessageFormatter()
 
         self.datetime_service = NtpDatetimeService()
         self.id_generator = UuidGeneratorService()
@@ -80,6 +84,7 @@ class Application:
             self.community_repository,
             self.member_repository,
             self.datetime_service,
+            self.message_formatter,
         )
         self.join_community_usecase = JoinCommunity(
             base_path,
@@ -104,6 +109,7 @@ class Application:
             self.file_service,
             self.symetric_encryption_service,
             self.datetime_service,
+            self.message_formatter,
         )
         self.create_opinion_usecase = CreateOpinion(
             self.machine_service,
@@ -115,10 +121,15 @@ class Application:
             self.symetric_encryption_service,
             self.file_service,
             self.datetime_service,
+            self.message_formatter,
         )
 
+        self.message_handler = MessageHandler(self.join_community_usecase)
+
         self.server_socket = Server(
-            self.machine_service.get_port(), self.join_community_usecase
+            self.machine_service.get_port(),
+            self.message_handler,
+            self.message_formatter,
         )
 
     def run(self):

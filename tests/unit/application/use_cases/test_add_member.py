@@ -6,12 +6,17 @@ import pytest
 from src.domain.entities.community import Community
 from src.domain.entities.member import Member
 from src.application.use_cases.add_member import AddMember
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 
 
 class TestAddMember:
     """Test add member to a community"""
 
     @pytest.fixture(scope="function", autouse=True, name="add_member_usecase")
+    @mock.patch(
+        "src.application.interfaces.imessage_formatter", name="message_formatter"
+    )
     @mock.patch("src.application.interfaces.idatetime_service", name="datetime_service")
     @mock.patch(
         "src.application.interfaces.imember_repository", name="member_repository"
@@ -42,6 +47,7 @@ class TestAddMember:
         community_repository: MagicMock,
         member_repository: MagicMock,
         datetime_service: MagicMock,
+        message_formatter: MagicMock,
     ) -> AddMember:
         """Create a use case for adding a member to a community."""
         uuid_generator.generate.return_value = "auth_code"
@@ -82,6 +88,7 @@ class TestAddMember:
             community_repository,
             member_repository,
             datetime_service,
+            message_formatter,
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -93,9 +100,9 @@ class TestAddMember:
         """Test succefull connection to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -115,15 +122,17 @@ class TestAddMember:
         """Method to test send invitation to the guest with member public key"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
+        message = MessageDataclass(MessageHeader.INVITATION)
+
         add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
-        mock_client.send_message.assert_any_call("INVITATION")
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_send_public_key(
@@ -134,15 +143,16 @@ class TestAddMember:
         """Method to test send public key to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
-        mock_client.send_message.assert_any_call("public_key")
+        message = MessageDataclass(MessageHeader.DATA, "public_key")
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_auth_key_generate(
@@ -153,9 +163,9 @@ class TestAddMember:
         """Method to test that an auth key is generated"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -172,9 +182,9 @@ class TestAddMember:
         """Method to test that the generated auth key is encrypted"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -193,15 +203,16 @@ class TestAddMember:
         """Method to test that the encrypted auth key is sent to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call("encr_auth_key")
+        message = MessageDataclass(MessageHeader.DATA, "encr_auth_key")
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_auth_key_decryption(
@@ -212,9 +223,9 @@ class TestAddMember:
         """Method to test that the received auth key is decrypted"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -233,9 +244,9 @@ class TestAddMember:
         """Method to test that the received auth key is the same as the generated one"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -245,9 +256,10 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call(
-            "REJECT|Authentification key not valid"
+        message = MessageDataclass(
+            MessageHeader.REJECT, "Authentification key not valid"
         )
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_add_member_to_community(
@@ -258,9 +270,9 @@ class TestAddMember:
         """Method to test add that the guest is added to the community"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -285,15 +297,15 @@ class TestAddMember:
         """Method to test that the community symetric key is retrieved"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        add_member_usecase.community_repository.get_community_encryption_key_path.assert_called_once()
+        add_member_usecase.community_repository.get_community_encryption_key_path.assert_called_once()  # pylint: disable=line-too-long
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_read_symetric_key(
@@ -304,9 +316,9 @@ class TestAddMember:
         """Method to test that the symetric key is read"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -323,9 +335,9 @@ class TestAddMember:
         """Method to test that the symetric key is encrypted"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -344,15 +356,16 @@ class TestAddMember:
         """Method to test that the symetric key is sent to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call("encr_symetric_key")
+        message = MessageDataclass(MessageHeader.DATA, "encr_symetric_key")
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_reject_message_sent(
@@ -363,9 +376,9 @@ class TestAddMember:
         """Method to test that the reject message is sent to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -375,9 +388,10 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call(
-            "REJECT|Authentification key not valid"
+        message = MessageDataclass(
+            MessageHeader.REJECT, "Authentification key not valid"
         )
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_connection_closed(
@@ -388,9 +402,9 @@ class TestAddMember:
         """Method to test that the connection with the guest is closed"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -407,9 +421,9 @@ class TestAddMember:
         """Method to test that the connection with the guest is closed"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -428,9 +442,9 @@ class TestAddMember:
         """Method to test that the community informations are retrieved"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -449,9 +463,9 @@ class TestAddMember:
         """Method to test that the community informations are encrypted"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -477,17 +491,18 @@ class TestAddMember:
         """Method to test that the community informations are sent to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call(
-            "INFORMATIONS|nonce,tag,encr_informations"
+        message = MessageDataclass(
+            MessageHeader.INFORMATIONS, "nonce,tag,encr_informations"
         )
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_get_community_database(
@@ -498,9 +513,9 @@ class TestAddMember:
         """Method to test that the community database is retrieved"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -520,9 +535,9 @@ class TestAddMember:
         """Method to test that the community database is encrypted"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -542,15 +557,16 @@ class TestAddMember:
         """Method to test that the community database is sent to the guest"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        mock_client.send_message.assert_any_call("DATABASE|nonce,tag,encr_database")
+        message = MessageDataclass(MessageHeader.DATABASE, "nonce,tag,encr_database")
+        mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_success_output(
@@ -561,9 +577,9 @@ class TestAddMember:
         """Method to test that the str output is correct"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
 
@@ -580,9 +596,9 @@ class TestAddMember:
         """Method to test that the str output is correct when an exception is raised"""
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.side_effect = Exception()
 
@@ -597,9 +613,9 @@ class TestAddMember:
         """Method to test that the datetime service is called"""
         guest = tuple(["127.0.0.1", 1664])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", guest]),
-            tuple(["encr_auth_code", guest]),
-            tuple(["ACK", guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
         ]
         mock_client.return_value = mock_client
         ip_address = "127.0.0.1"

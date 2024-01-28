@@ -3,6 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.application.use_cases.join_community import JoinCommunity
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 
 
 class TestJoinCommunity:
@@ -68,11 +70,26 @@ class TestJoinCommunity:
         """Create the mock client"""
         member = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
-            tuple(["public_key", member]),
-            tuple(["encr_auth_key", member]),
-            tuple(["encr_symetric_key", member]),
-            tuple(["INFORMATIONS|nonce,tag,encr_community_informations", member]),
-            tuple(["DATABASE|nonce,tag,encrypted_database", member]),
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), member]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_key"), member]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_symetric_key"), member]),
+            tuple(
+                [
+                    MessageDataclass(
+                        MessageHeader.INFORMATIONS,
+                        "nonce,tag,encr_community_informations",
+                    ),
+                    member,
+                ]
+            ),
+            tuple(
+                [
+                    MessageDataclass(
+                        MessageHeader.DATABASE, "nonce,tag,encrypted_database"
+                    ),
+                    member,
+                ]
+            ),
         ]
         return mock_client
 
@@ -82,7 +99,8 @@ class TestJoinCommunity:
         """Test that the public key is sent to response to send invitation"""
         join_community_use_case.execute(mock_client)
 
-        mock_client.send_message.assert_any_call("public_key")
+        message = MessageDataclass(MessageHeader.DATA, "public_key")
+        mock_client.send_message.assert_any_call(message)
 
     def test_received_auth_key_decryption(
         self, join_community_use_case: JoinCommunity, mock_client: MagicMock
@@ -110,7 +128,8 @@ class TestJoinCommunity:
         """Test that the encrypted auth key is sent to confirm auth key"""
         join_community_use_case.execute(mock_client)
 
-        mock_client.send_message.assert_any_call("encr_auth_key")
+        message = MessageDataclass(MessageHeader.DATA, "encr_auth_key")
+        mock_client.send_message.assert_any_call(message)
 
     def test_received_symetric_key_decryption(
         self, join_community_use_case: JoinCommunity, mock_client: MagicMock
@@ -156,7 +175,8 @@ class TestJoinCommunity:
         """Test that the acknowledgement is sent"""
         join_community_use_case.execute(mock_client)
 
-        mock_client.send_message.assert_any_call("ACK")
+        message = MessageDataclass(MessageHeader.ACK)
+        mock_client.send_message.assert_any_call(message)
 
     def test_received_community_database_decryption(
         self, join_community_use_case: JoinCommunity, mock_client: MagicMock

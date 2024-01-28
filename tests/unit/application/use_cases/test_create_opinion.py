@@ -7,6 +7,8 @@ from src.application.use_cases.create_opinion import CreateOpinion
 from src.domain.entities.idea import Idea
 from src.domain.entities.member import Member
 from src.domain.entities.opinion import Opinion
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 
 
 class TestCreateOpinion:
@@ -18,6 +20,9 @@ class TestCreateOpinion:
         return Member("auth_key1", "127.0.0.1", 1664)
 
     @pytest.fixture(scope="function", autouse=True, name="create_opinion_usecase")
+    @mock.patch(
+        "src.application.interfaces.imessage_formatter", name="message_formatter"
+    )
     @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
     )
@@ -54,6 +59,7 @@ class TestCreateOpinion:
         symetric_encryption_service_mock: MagicMock,
         file_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
+        message_formatter: MagicMock,
     ):
         """Create a usecase instance."""
         return CreateOpinion(
@@ -66,6 +72,7 @@ class TestCreateOpinion:
             symetric_encryption_service_mock,
             file_service_mock,
             datetime_service_mock,
+            message_formatter,
         )
 
     @pytest.fixture(scope="function", autouse=True, name="idea")
@@ -75,7 +82,10 @@ class TestCreateOpinion:
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_opinion_calls_repository_for_idea(
-        self, mock_client: MagicMock, create_opinion_usecase: CreateOpinion, idea: Idea
+        self,
+        mock_client: MagicMock,  # pylint: disable=unused-argument
+        create_opinion_usecase: CreateOpinion,
+        idea: Idea,
     ):
         """Creating an opinion should be possible given the proper arguments."""
         create_opinion_usecase.idea_repository.get_idea_from_community.return_value = (
@@ -90,7 +100,10 @@ class TestCreateOpinion:
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_opinion_calls_repository_for_opinion(
-        self, mock_client: MagicMock, create_opinion_usecase: CreateOpinion, idea: Idea
+        self,
+        mock_client: MagicMock,  # pylint: disable=unused-argument
+        create_opinion_usecase: CreateOpinion,
+        idea: Idea,
     ):
         """Creating an opinion should be possible given the proper arguments."""
         create_opinion_usecase.idea_repository.get_idea_from_community.return_value = (
@@ -146,9 +159,11 @@ class TestCreateOpinion:
             "cipher",
         )
 
+        message = MessageDataclass(MessageHeader.CREATE_OPINION, "nonce,tag,cipher")
+
         create_opinion_usecase.execute("1", "1", "content")
 
-        mock_client.send_message.assert_any_call("CREATE_OPINION|nonce,tag,cipher")
+        mock_client.send_message.assert_any_call(message)
         assert mock_client.send_message.call_count == len(members) - 1
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")

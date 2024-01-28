@@ -16,6 +16,9 @@ from src.application.interfaces.icommunity_repository import ICommunityRepositor
 from src.application.interfaces.imember_repository import IMemberRepository
 from src.application.interfaces.iadd_member import IAddMember
 from src.application.interfaces.iclient_socket import IClientSocket
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
+from src.application.interfaces.imessage_formatter import IMessageFormatter
 import src.presentation.network.client as client
 
 
@@ -33,6 +36,7 @@ class AddMember(IAddMember):
         community_repository: ICommunityRepository,
         member_repository: IMemberRepository,
         datetime_service: IDatetimeService,
+        message_formatter: IMessageFormatter,
     ):
         self.base_path = base_path
         self.asymetric_encryption_service = asymetric_encryption_service
@@ -43,6 +47,7 @@ class AddMember(IAddMember):
         self.community_repository = community_repository
         self.member_repository = member_repository
         self.datetime_service = datetime_service
+        self.message_formatter = message_formatter
 
         self.public_key: str
         self.private_key: str
@@ -57,7 +62,7 @@ class AddMember(IAddMember):
 
         client_socket: IClientSocket = None
         try:
-            client_socket = client.Client()
+            client_socket = client.Client(self.message_formatter)
             self._connect_to_guest(client_socket, ip_address, port)
 
             self.guest_public_key = self._receive_public_key(client_socket)
@@ -94,19 +99,21 @@ class AddMember(IAddMember):
         """Connect to the guest"""
         client_socket.connect_to_server(ip_address, port)
 
-        client_socket.send_message("INVITATION")
+        client_socket.send_message(MessageDataclass(MessageHeader.INVITATION))
 
     def _receive_public_key(self, client_socket: IClientSocket) -> str:
         """Receive the public key from the guest"""
-        public_key, _ = client_socket.receive_message()
-        if not public_key:
+        public_key_message, _ = client_socket.receive_message()
+        if not public_key_message or not public_key_message.content:
             raise AuthentificationFailedError("No public key received")
 
-        return public_key
+        return public_key_message.content
 
     def _send_encryption_public_key(self, client_socket: IClientSocket):
         """Send the public key to the new member"""
-        client_socket.send_message(self.public_key)
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.DATA, self.public_key)
+        )
 
     def _send_auth_key(self, client_socket: IClientSocket, auth_key: str):
         """Give the auth key to the new member"""
@@ -114,16 +121,18 @@ class AddMember(IAddMember):
             auth_key, self.guest_public_key
         )
 
-        client_socket.send_message(encrypted_auth_key)
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.DATA, encrypted_auth_key)
+        )
 
     def _receive_auth_key(self, client_socket: IClientSocket) -> str:
         """Receive the auth key"""
-        reencrypted_auth_key, _ = client_socket.receive_message()
-        if not reencrypted_auth_key:
+        reencrypted_auth_key_message, _ = client_socket.receive_message()
+        if not reencrypted_auth_key_message or not reencrypted_auth_key_message.content:
             raise AuthentificationFailedError("Authentification key not valid")
 
         decrypted_auth_key = self.asymetric_encryption_service.decrypt(
-            reencrypted_auth_key, self.private_key
+            reencrypted_auth_key_message.content, self.private_key
         )
 
         return decrypted_auth_key
@@ -150,7 +159,9 @@ class AddMember(IAddMember):
             self.symetric_key, self.guest_public_key
         )
 
-        client_socket.send_message(encrypted_symetric_key)
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.DATA, encrypted_symetric_key)
+        )
 
     def _send_community_informations(
         self, client_socket: IClientSocket, community_id: str
@@ -163,14 +174,16 @@ class AddMember(IAddMember):
             informations, self.symetric_key
         )
 
-        message = f"INFORMATIONS|{nonce},{tag},{encrypted_informations}"
-        client_socket.send_message(message)
+        message = f"{nonce},{tag},{encrypted_informations}"
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.INFORMATIONS, message)
+        )
 
     def _receive_acknowledgement(self, client_socket: IClientSocket):
         """Receive the acknowledgement"""
         message, _ = client_socket.receive_message()
 
-        if not message or message != "ACK":
+        if not message or message.header != MessageHeader.ACK:
             raise AuthentificationFailedError("No acknowledgement received")
 
     def _send_community_database(
@@ -185,9 +198,9 @@ class AddMember(IAddMember):
             database.hex(), self.symetric_key
         )
 
-        message = f"DATABASE|{nonce},{tag},{encrypted_database}"
-        client_socket.send_message(message)
+        message = f"{nonce},{tag},{encrypted_database}"
+        client_socket.send_message(MessageDataclass(MessageHeader.DATABASE, message))
 
     def _send_reject_message(self, client_socket: IClientSocket, message: str):
         """Send a reject message to the new member"""
-        client_socket.send_message(f"REJECT|{message}")
+        client_socket.send_message(MessageDataclass(MessageHeader.REJECT, message))

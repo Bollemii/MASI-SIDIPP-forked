@@ -1,55 +1,58 @@
 import pytest
 
-from src.presentation.formatting.message_dataclass import (
-    MessageDataclass,
-    MessageHeader,
-)
-from src.presentation.formatting.formatter import Formatter
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
+from src.presentation.formatting.message_formatter import MessageFormatter
 from src.application.exceptions.message_error import MessageError
 
 
 class TestFormatter:
     """the test formatter class of message"""
 
-    @pytest.fixture(
-        params=[
-            MessageHeader.INVITATION,
-            MessageHeader.AUTH_KEY,
-            MessageHeader.PUBLIC_KEY,
-            MessageHeader.CONFIRM_ADD_MEMBER,
-            MessageHeader.REFUSED_ADD_MEMBER,
-        ]
-    )
-    def message_data(self, request):
+    @pytest.fixture(scope="function", autouse=True, name="message")
+    def create_message(self) -> MessageDataclass:
         """Fixture to create a MessageDataclass with different MessageHeader."""
-        header = request.param
+        header = MessageHeader.INVITATION
         content = "content"
         return MessageDataclass(header=header, content=content)
 
-    @pytest.fixture
-    def formatter(self):
+    @pytest.fixture(scope="function", autouse=True, name="formatter")
+    def create_formatter(self) -> MessageFormatter:
         """Fixture to create a default Formatter for testing."""
-        return Formatter()
+        return MessageFormatter()
 
-    def test_format_message(self, formatter, message_data):
-        """Test method to format object to str with different message headers."""
-        formated_message = formatter.format_message(message_data)
-        expected_message = f"{message_data.header}|{message_data.content}"
+    def test_format_message(
+        self, formatter: MessageFormatter, message: MessageDataclass
+    ):
+        """Test that the formatter formats the message to a string"""
+        formated_message = formatter.format(message)
+        expected_message = f"{message.header}|{message.content}"
         assert formated_message == expected_message
 
-    def test_invalid_format_message(self, formatter):
-        """Test metthod to check invalid message header formatting"""
+    def test_invalid_format_message(self, formatter: MessageFormatter):
+        """Test that the formatter raises an error when the message header is invalid"""
         invalid_message_data = MessageDataclass(
             header="INVALID_HEADER", content="content"
         )
         with pytest.raises(MessageError):
-            formatter.format_message(invalid_message_data)
+            formatter.format(invalid_message_data)
 
-    def test_parse_invitation_string_message(self):
-        """test methode to parse str to object invitation message"""
+    def test_parse_invitation_string_message(self, formatter: MessageFormatter):
+        """Test that the formatter parses the string to a message object"""
         formated_data = "INVITATION|content"
-        formatter = Formatter()
-        parse_message = formatter.parse(formated_data)
+        parsed_message = formatter.parse(formated_data)
 
-        assert parse_message.header == MessageHeader.INVITATION
-        assert parse_message.content == "content"
+        assert parsed_message.header == MessageHeader.INVITATION
+        assert parsed_message.content == "content"
+
+    def test_parse_invalid_message(self, formatter: MessageFormatter):
+        """Test that the formatter raises an error when the message is invalid"""
+        formated_data = "content"
+        with pytest.raises(MessageError):
+            formatter.parse(formated_data)
+
+    def test_parse_invalid_message_header(self, formatter: MessageFormatter):
+        """Test that the formatter raises an error when the message header is invalid"""
+        formated_data = "INVALID_HEADER|content"
+        with pytest.raises(MessageError):
+            formatter.parse(formated_data)
