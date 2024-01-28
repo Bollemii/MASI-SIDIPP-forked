@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from src.presentation.formatting.message_dataclass import MessageDataclass
+
 
 class IClientSocket(ABC):
     """interface client socket class"""
@@ -15,7 +17,9 @@ class IClientSocket(ABC):
         """Send message"""
 
     @abstractmethod
-    def receive_message(self) -> tuple[str, tuple[str, int]]:
+    def receive_message(
+        self,
+    ) -> tuple[str, tuple[str, int]] | tuple[MessageDataclass, tuple[str, int]]:
         """Receive message"""
 
     @abstractmethod

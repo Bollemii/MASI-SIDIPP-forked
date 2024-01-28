@@ -13,6 +13,8 @@ from src.application.interfaces.isymetric_encryption_service import (
 from src.application.interfaces.iclient_socket import IClientSocket
 from src.application.interfaces.icommunity_repository import ICommunityRepository
 from src.domain.entities.community import Community
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 
 
 class JoinCommunity(IJoinCommunity):
@@ -73,25 +75,27 @@ class JoinCommunity(IJoinCommunity):
 
     def _send_public_key(self, client_socket: IClientSocket) -> str:
         """Response to the invitation"""
-        client_socket.send_message(self.public_key)
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.DATA, self.public_key)
+        )
 
     def _receive_public_key(self, client_socket: IClientSocket) -> str:
         """Receive the public key"""
-        public_key, _ = client_socket.receive_message()
+        public_key_message, _ = client_socket.receive_message()
 
-        if not public_key:
+        if not public_key_message or not public_key_message.content:
             raise AuthentificationFailedError("No public key received")
 
-        return public_key
+        return public_key_message.content
 
     def _receive_auth_key(self, client_socket: IClientSocket) -> str:
         """Receive the auth key"""
-        encrypted_auth_key, _ = client_socket.receive_message()
-        if not encrypted_auth_key:
+        encrypted_auth_key_message, _ = client_socket.receive_message()
+        if not encrypted_auth_key_message or not encrypted_auth_key_message.content:
             raise AuthentificationFailedError("Authentification key not valid")
 
         decripted_auth_key = self.asymetric_encryption_service.decrypt(
-            encrypted_auth_key, self.private_key
+            encrypted_auth_key_message.content, self.private_key
         )
         return decripted_auth_key
 
@@ -101,20 +105,21 @@ class JoinCommunity(IJoinCommunity):
             auth_key, self.member_public_key
         )
 
-        client_socket.send_message(reencripted_auth_key)
+        client_socket.send_message(
+            MessageDataclass(MessageHeader.DATA, reencripted_auth_key)
+        )
 
     def _receive_symetric_key(self, client_socket: IClientSocket) -> str:
         """Receive the symetric key"""
-        encrypted_symetric_key, _ = client_socket.receive_message()
+        encrypted_symetric_key_message, _ = client_socket.receive_message()
 
-        if encrypted_symetric_key.startswith("REJECT"):
-            _, rejection_message = encrypted_symetric_key.split("|", maxsplit=1)
-            raise AuthentificationFailedError(rejection_message)
+        if encrypted_symetric_key_message.header == MessageHeader.REJECT:
+            raise AuthentificationFailedError(encrypted_symetric_key_message.content)
 
-        if not encrypted_symetric_key:
+        if not encrypted_symetric_key_message:
             raise AuthentificationFailedError("No symetric key received")
         symetric_key = self.asymetric_encryption_service.decrypt(
-            encrypted_symetric_key, self.private_key
+            encrypted_symetric_key_message.content, self.private_key
         )
 
         return symetric_key
@@ -123,13 +128,14 @@ class JoinCommunity(IJoinCommunity):
         self, client_socket: IClientSocket
     ) -> Community:
         """Receive the community informations"""
-        message, _ = client_socket.receive_message()
+        informations_message, _ = client_socket.receive_message()
 
-        if not message:
+        if not informations_message or not informations_message.content:
             raise AuthentificationFailedError("No community informations received")
 
-        message = message.split("|", maxsplit=1)[1]
-        nonce, tag, encr_community_informations = message.split(",", maxsplit=2)
+        nonce, tag, encr_community_informations = informations_message.content.split(
+            ",", maxsplit=2
+        )
 
         community_informations = self.symetric_encryption_service.decrypt(
             encr_community_informations, self.symetric_key, tag, nonce
@@ -156,17 +162,16 @@ class JoinCommunity(IJoinCommunity):
 
     def _send_acknowledgement(self, client_socket: IClientSocket):
         """Send acknowledgement"""
-        client_socket.send_message("ACK")
+        client_socket.send_message(MessageDataclass(MessageHeader.ACK))
 
     def _receive_community_database(self, client_socket: IClientSocket):
         """Receive the community database"""
-        message, _ = client_socket.receive_message()
+        database_message, _ = client_socket.receive_message()
 
-        if not message:
+        if not database_message:
             raise AuthentificationFailedError("No community database received")
 
-        message = message.split("|", maxsplit=1)[1]
-        nonce, tag, encrypted_database = message.split(",", maxsplit=2)
+        nonce, tag, encrypted_database = database_message.content.split(",", maxsplit=2)
 
         decrypted_database = self.symetric_encryption_service.decrypt(
             encrypted_database, self.symetric_key, tag, nonce

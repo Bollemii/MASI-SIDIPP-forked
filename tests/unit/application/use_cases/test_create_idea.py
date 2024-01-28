@@ -11,6 +11,9 @@ class TestCreateIdea:
 
     @pytest.fixture(scope="function", autouse=True, name="create_idea_usecase")
     @mock.patch(
+        "src.application.interfaces.imessage_formatter", name="message_formatter"
+    )
+    @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
     )
     @mock.patch(
@@ -42,6 +45,7 @@ class TestCreateIdea:
         file_service_mock: MagicMock,
         symetric_encryption_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
+        message_formatter: MagicMock,
     ):
         """Create a usecase instance."""
         return CreateIdea(
@@ -53,11 +57,14 @@ class TestCreateIdea:
             file_service_mock,
             symetric_encryption_service_mock,
             datetime_service_mock,
+            message_formatter,
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_idea_calls_repository(
-        self, mock_client: MagicMock, create_idea_usecase: CreateIdea
+        self,
+        mock_client: MagicMock,  # pylint: disable=unused-argument
+        create_idea_usecase: CreateIdea,
     ):
         """Creating an idea should be possible given the proper arguments."""
         create_idea_usecase.execute("1", "content")

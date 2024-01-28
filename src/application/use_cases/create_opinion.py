@@ -6,12 +6,15 @@ from src.application.interfaces.iid_generator_service import IIdGeneratorService
 from src.application.interfaces.iidea_repository import IIdeaRepository
 from src.application.interfaces.imachine_service import IMachineService
 from src.application.interfaces.imember_repository import IMemberRepository
+from src.application.interfaces.imessage_formatter import IMessageFormatter
 from src.application.interfaces.iopinion_repository import IOpinionRepository
 from src.application.interfaces.isymetric_encryption_service import (
     ISymetricEncryptionService,
 )
 from src.domain.entities.opinion import Opinion
 from src.domain.exceptions.parent_not_found_error import ParentNotFoundError
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 from src.presentation.network import client
 
 
@@ -29,6 +32,7 @@ class CreateOpinion(ICreateOpinion):
         symetric_encryption_service: ISymetricEncryptionService,
         file_service: IFileService,
         datetime_service: IDatetimeService,
+        message_formatter: IMessageFormatter,
     ):
         self.machine_service = machine_service
         self.id_generator_service = id_generator_service
@@ -39,6 +43,7 @@ class CreateOpinion(ICreateOpinion):
         self.symetric_encryption_service = symetric_encryption_service
         self.file_service = file_service
         self.datetime_service = datetime_service
+        self.message_formatter = message_formatter
 
     def _get_symetric_key(self, community_id: str) -> str:
         symetric_key_path = self.community_repository.get_community_encryption_key_path(
@@ -76,12 +81,16 @@ class CreateOpinion(ICreateOpinion):
             for member in members:
                 client_socket: client.Client = None
                 try:
-                    client_socket = client.Client()
+                    client_socket = client.Client(self.message_formatter)
                     (nonce, tag, cipher) = self.symetric_encryption_service.encrypt(
                         opinion.to_str(), symetric_key
                     )
                     client_socket.connect_to_server(member.ip_address, member.port)
-                    client_socket.send_message(f"CREATE_OPINION|{nonce},{tag},{cipher}")
+                    message_dataclass = MessageDataclass(
+                        MessageHeader.CREATE_OPINION,
+                        f"{nonce},{tag},{cipher}",
+                    )
+                    client_socket.send_message(message_dataclass)
                 except:
                     pass
                 finally:

@@ -1,26 +1,13 @@
-import pytest
-from src.presentation.formatting.message_dataclass import (
-    MessageDataclass,
-    MessageHeader,
-)
+from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.formatting.message_header import MessageHeader
 
 
 class TestMessageDataclass:
     """The test message dataclass"""
 
-    @pytest.mark.parametrize(
-        "header",
-        [
-            MessageHeader.INVITATION,
-            MessageHeader.AUTH_KEY,
-            MessageHeader.PUBLIC_KEY,
-            MessageHeader.CONFIRM_ADD_MEMBER,
-            MessageHeader.REFUSED_ADD_MEMBER,
-        ],
-    )
-    def test_message_dataclass_creation(self, header: MessageHeader):
-        """Test message dataclass creation"""
-
+    def test_message_dataclass_creation(self):
+        """Test that the message dataclass is created"""
+        header = MessageHeader.INVITATION
         content = "content"
 
         message_data = MessageDataclass(header, content)

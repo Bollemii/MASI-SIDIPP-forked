@@ -1,9 +1,12 @@
 import socket
+from src.application.exceptions.message_error import MessageError
 
 from src.application.exceptions.socket_error import SocketError
 from src.application.interfaces.iserver_socket import IServerSocket
-from src.presentation.network.client import Client
-from src.application.interfaces.ijoin_community import IJoinCommunity
+from src.presentation.formatting.message_dataclass import MessageDataclass
+import src.presentation.network.client as client
+from src.application.interfaces.imessage_handler import IMessageHandler
+from src.application.interfaces.imessage_formatter import IMessageFormatter
 
 
 class Server(IServerSocket):
@@ -12,11 +15,13 @@ class Server(IServerSocket):
     def __init__(
         self,
         port: int,
-        join_community_usecase: IJoinCommunity,
+        message_handler: IMessageHandler,
+        message_formatter: IMessageFormatter,
     ):
         super().__init__()
         self.port = port
-        self.join_community_usecase = join_community_usecase
+        self.message_handler = message_handler
+        self.message_formatter = message_formatter
 
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,22 +38,26 @@ class Server(IServerSocket):
             raise SocketError(f"Unable to run server :{err}") from err
 
         self.running = True
-        while self.running:
+        while self._is_running():
             try:
                 client_socket, _ = self.server_socket.accept()
-                client = Client(client_socket)
-                message, _ = client.receive_message()
-                if message == "INVITATION":
-                    self.join_community_usecase.execute(client)
-                elif message.startswith("CREATE_IDEA"):
-                    print(f"Received idea : {message.split('|')[1]}")
-                elif message.startswith("CREATE_OPINION"):
-                    print(f"Received opinion : {message.split('|')[1]}")
-                client.close_connection()
+                client_socket = client.Client(self.message_formatter, client_socket)
+                message, _ = client_socket.receive_message()
+                if not isinstance(message, MessageDataclass):
+                    raise MessageError(f"Invalid received message : {message}")
+                self.message_handler.handle_message(client_socket, message)
+
+                client_socket.close_connection()
             except socket.timeout:
                 pass
+            except MessageError as err:
+                print(err)
 
         self.server_socket.close()
+
+    def _is_running(self) -> bool:
+        """Returns if the server is running"""
+        return self.running
 
     def stop(self):
         self.running = False
