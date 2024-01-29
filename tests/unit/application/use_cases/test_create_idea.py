@@ -11,6 +11,9 @@ class TestCreateIdea:
 
     @pytest.fixture(scope="function", autouse=True, name="create_idea_usecase")
     @mock.patch(
+        "src.application.interfaces.icommunity_manager", name="community_manager"
+    )
+    @mock.patch(
         "src.application.interfaces.imessage_formatter", name="message_formatter"
     )
     @mock.patch(
@@ -46,6 +49,7 @@ class TestCreateIdea:
         symetric_encryption_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
         message_formatter: MagicMock,
+        community_manager: MagicMock,
     ):
         """Create a usecase instance."""
         return CreateIdea(
@@ -58,6 +62,7 @@ class TestCreateIdea:
             symetric_encryption_service_mock,
             datetime_service_mock,
             message_formatter,
+            community_manager,
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -145,8 +150,7 @@ class TestCreateIdea:
 
         create_idea_usecase.execute("1", content)
 
-        create_idea_usecase.community_repository.get_community_encryption_key_path.assert_called_once()
-        create_idea_usecase.file_service.read_file.assert_called_once()
+        create_idea_usecase.community_manager.get_community_symetric_key.assert_called()
 
     @pytest.mark.parametrize(
         "members",
@@ -196,6 +200,12 @@ class TestCreateIdea:
     ):
         """Creating an idea should be possible given the proper arguments."""
         mock_client.return_value = mock_client
+
+        create_idea_usecase.symetric_encryption_service.encrypt.return_value = (
+            "nonce",
+            "tag",
+            "cipher",
+        )
 
         output = create_idea_usecase.execute("1", "content")
 

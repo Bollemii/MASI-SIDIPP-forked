@@ -15,6 +15,7 @@ from src.domain.entities.opinion import Opinion
 from src.domain.exceptions.parent_not_found_error import ParentNotFoundError
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
+from src.presentation.manager.community_manager import CommunityManager
 from src.presentation.network import client
 
 
@@ -33,6 +34,7 @@ class CreateOpinion(ICreateOpinion):
         file_service: IFileService,
         datetime_service: IDatetimeService,
         message_formatter: IMessageFormatter,
+        community_manager: CommunityManager,
     ):
         self.machine_service = machine_service
         self.id_generator_service = id_generator_service
@@ -44,16 +46,13 @@ class CreateOpinion(ICreateOpinion):
         self.file_service = file_service
         self.datetime_service = datetime_service
         self.message_formatter = message_formatter
-
-    def _get_symetric_key(self, community_id: str) -> str:
-        symetric_key_path = self.community_repository.get_community_encryption_key_path(
-            community_id
-        )
-        return self.file_service.read_file(symetric_key_path)
+        self.community_manager = community_manager
 
     def execute(self, community_id: str, idea_or_opinion_id: str, content: str) -> str:
         try:
-            symetric_key = self._get_symetric_key(community_id)
+            symetric_key = self.community_manager.get_community_symetric_key(
+                community_id
+            )
             author = self.machine_service.get_current_user(community_id)
             members = filter(
                 lambda member: member.authentication_key != author.authentication_key,
@@ -78,18 +77,20 @@ class CreateOpinion(ICreateOpinion):
             )
             self.opinion_repository.add_opinion_to_community(community_id, opinion)
 
+            (nonce, tag, cipher) = self.symetric_encryption_service.encrypt(
+                opinion.to_str(), symetric_key
+            )
+            message_dataclass = MessageDataclass(
+                MessageHeader.CREATE_OPINION,
+                f"{nonce},{tag},{cipher}",
+                community_id,
+            )
+
             for member in members:
                 client_socket: client.Client = None
                 try:
                     client_socket = client.Client(self.message_formatter)
-                    (nonce, tag, cipher) = self.symetric_encryption_service.encrypt(
-                        opinion.to_str(), symetric_key
-                    )
                     client_socket.connect_to_server(member.ip_address, member.port)
-                    message_dataclass = MessageDataclass(
-                        MessageHeader.CREATE_OPINION,
-                        f"{nonce},{tag},{cipher}",
-                    )
                     client_socket.send_message(message_dataclass)
                 except:
                     pass

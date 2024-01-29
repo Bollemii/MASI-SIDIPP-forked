@@ -11,40 +11,86 @@ from src.application.exceptions.message_error import MessageError
 class TestMessageHandler:
     """Test class for MessageHandler"""
 
-    @pytest.fixture(scope="function", autouse=True, name="message")
-    def create_message(self):
-        """Fixture to create a MessageDataclass with different MessageHeader."""
-        header = MessageHeader.INVITATION
-        content = "content"
-        return MessageDataclass(header=header, content=content)
-
+    @pytest.fixture(scope="function", autouse=True, name="message_handler")
     @mock.patch(
-        "src.application.interfaces.ijoin_community", name="mock_join_community"
+        "src.application.interfaces.icommunity_manager", name="mock_community_manager"
     )
+    @mock.patch("src.application.interfaces.isave_idea", name="mock_save_idea")
+    @mock.patch("src.application.interfaces.isave_opinion", name="mock_save_opinion")
+    @mock.patch(
+        "src.application.interfaces.ijoin_community", name="join_community_usecase"
+    )
+    def create_message_handler(
+        self,
+        join_community_usecase: MagicMock,
+        mock_save_opinion: MagicMock,
+        mock_save_idea: MagicMock,
+        mock_community_manager: MagicMock,
+    ) -> MessageHandler:
+        """Fixture to create a MessageHandler instance."""
+        mock_community_manager.is_community_member.return_value = True
+        return MessageHandler(
+            mock_community_manager,
+            join_community_usecase,
+            mock_save_idea,
+            mock_save_opinion,
+        )
+
     @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
     def test_handle_message(
         self,
         mock_client: MagicMock,
-        mock_join_community: MagicMock,
-        message: MessageDataclass,
+        message_handler: MessageHandler,
     ):
         """Test method for handle_message with different MessageHeader."""
-        message_handler = MessageHandler(mock_join_community)
+        message = MessageDataclass(MessageHeader.INVITATION, "content")
+        sender = ("127.0.0.1", 1024)
+        message_handler.handle_message(sender, mock_client, message)
 
-        message_handler.handle_message(mock_client, message)
+        message_handler.join_community_usecase.execute.assert_called_once()
 
-        mock_join_community.execute.assert_called_once()
-
-    @mock.patch(
-        "src.application.interfaces.ijoin_community", name="mock_join_community"
-    )
     @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
     def test_invalid_handler_message(
-        self, mock_client: MagicMock, mock_join_community: MagicMock
+        self, mock_client: MagicMock, message_handler: MessageHandler
     ):
         """Test method for handle_message with invalid MessageDataclass."""
         invalid_message = MessageDataclass(header="INVALID_HEADER", content="content")
-        message_handler = MessageHandler(mock_join_community)
+        sender = ("127.0.0.1", 1024)
 
         with pytest.raises(MessageError):
-            message_handler.handle_message(mock_client, invalid_message)
+            message_handler.handle_message(sender, mock_client, invalid_message)
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_invalid_community_member(
+        self, mock_client: MagicMock, message_handler: MessageHandler
+    ):
+        """Test method for handle_message with invalid community member."""
+        message = MessageDataclass(MessageHeader.CREATE_IDEA, "content")
+        sender = ("127.0.0.1", 1024)
+
+        message_handler.community_manager.is_community_member.return_value = False
+
+        with pytest.raises(MessageError):
+            message_handler.handle_message(sender, mock_client, message)
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_valid_community_member(
+        self, mock_client: MagicMock, message_handler: MessageHandler
+    ):
+        """Test method for handle_message with valid community member."""
+        message = MessageDataclass(MessageHeader.CREATE_IDEA, "content")
+        sender = ("127.0.0.1", 1024)
+        message_handler.handle_message(sender, mock_client, message)
+
+        message_handler.save_idea_usecase.execute.assert_called_once()
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_save_opinion_call(
+        self, mock_client: MagicMock, message_handler: MessageHandler
+    ):
+        """Test method for handle_message with valid community member."""
+        message = MessageDataclass(MessageHeader.CREATE_OPINION, "content")
+        sender = ("127.0.0.1", 1024)
+        message_handler.handle_message(sender, mock_client, message)
+
+        message_handler.save_opinion_usecase.execute.assert_called_once()

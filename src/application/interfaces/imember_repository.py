@@ -16,7 +16,10 @@ class IMemberRepository(ABC):
 
     @abstractmethod
     def get_member_for_community(
-        self, community_id: str, member_auth_key: str
+        self,
+        community_id: str,
+        member_auth_key: str | None = None,
+        ip_address: str | None = None,
     ) -> Member | None:
         """Get a member of a specific community"""
 

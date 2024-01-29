@@ -1,4 +1,7 @@
+from src.application.interfaces.icommunity_manager import ICommunityManager
 from src.application.interfaces.imessage_handler import IMessageHandler
+from src.application.interfaces.isave_idea import ISaveIdea
+from src.application.interfaces.isave_opinion import ISaveOpinion
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
 from src.application.exceptions.message_error import MessageError
@@ -9,16 +12,33 @@ from src.presentation.network.client import Client
 class MessageHandler(IMessageHandler):
     """Class to execute an action based on the message"""
 
-    def __init__(self, join_community_usecase: IJoinCommunity):
+    def __init__(
+        self,
+        community_manager: ICommunityManager,
+        join_community_usecase: IJoinCommunity,
+        save_idea_usecase: ISaveIdea,
+        save_opinion_usecase: ISaveOpinion,
+    ):
+        self.community_manager = community_manager
         self.join_community_usecase = join_community_usecase
+        self.save_idea_usecase = save_idea_usecase
+        self.save_opinion_usecase = save_opinion_usecase
 
-    def handle_message(self, client: Client, message: MessageDataclass):
+    def handle_message(
+        self, sender: tuple[str, int], client: Client, message: MessageDataclass
+    ):
+        if message.header != MessageHeader.INVITATION:
+            if not self.community_manager.is_community_member(
+                message.community_id, ip_address=sender[0]
+            ):
+                raise MessageError("User is not a member of the community.")
+
         match message.header:
             case MessageHeader.INVITATION:
                 self.join_community_usecase.execute(client)
             case MessageHeader.CREATE_IDEA:
-                print(f"Received idea : {message.content}")
+                self.save_idea_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_OPINION:
-                print(f"Received opinion : {message.content}")
+                self.save_opinion_usecase.execute(message.community_id, message.content)
             case _:
                 raise MessageError("Invalid header in the message.")

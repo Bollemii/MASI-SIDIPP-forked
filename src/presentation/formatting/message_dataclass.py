@@ -9,3 +9,4 @@ class MessageDataclass:
 
     header: MessageHeader
     content: str | None = None
+    community_id: str | None = None

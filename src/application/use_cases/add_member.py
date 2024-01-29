@@ -1,3 +1,4 @@
+from src.application.interfaces.icommunity_manager import ICommunityManager
 from src.domain.entities.member import Member
 from src.application.interfaces.idatetime_service import IDatetimeService
 from src.application.exceptions.authentification_failed_error import (
@@ -37,6 +38,7 @@ class AddMember(IAddMember):
         member_repository: IMemberRepository,
         datetime_service: IDatetimeService,
         message_formatter: IMessageFormatter,
+        community_manager: ICommunityManager,
     ):
         self.base_path = base_path
         self.asymetric_encryption_service = asymetric_encryption_service
@@ -48,6 +50,7 @@ class AddMember(IAddMember):
         self.member_repository = member_repository
         self.datetime_service = datetime_service
         self.message_formatter = message_formatter
+        self.community_manager = community_manager
 
         self.public_key: str
         self.private_key: str
@@ -76,7 +79,9 @@ class AddMember(IAddMember):
 
             self._add_member_to_community(community_id, auth_key, ip_address, port)
 
-            self.symetric_key = self._get_community_symetric_key(community_id)
+            self.symetric_key = self.community_manager.get_community_symetric_key(
+                community_id
+            )
             self._send_community_symetric_key(client_socket)
 
             self._send_community_informations(client_socket, community_id)
@@ -145,13 +150,6 @@ class AddMember(IAddMember):
             auth_key, ip_address, port, self.datetime_service.get_datetime()
         )
         self.member_repository.add_member_to_community(community_id, member)
-
-    def _get_community_symetric_key(self, community_id: str) -> str:
-        """Get the symetric key of the community"""
-        symetric_key_path = self.community_repository.get_community_encryption_key_path(
-            community_id
-        )
-        return self.file_service.read_file(symetric_key_path)
 
     def _send_community_symetric_key(self, client_socket: IClientSocket):
         """Send the symetric key to the new member"""

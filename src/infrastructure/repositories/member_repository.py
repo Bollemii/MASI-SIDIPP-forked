@@ -45,9 +45,25 @@ class MemberRepository(IMemberRepository, SqliteRepository):
                 raise MemberAlreadyExistsError(error) from error
 
     def get_member_for_community(
-        self, community_id: str, member_auth_key: str
+        self,
+        community_id: str,
+        member_auth_key: str | None = None,
+        ip_address: str | None = None,
     ) -> Member | None:
         self.initialize_if_not_exists(community_id)
+
+        if member_auth_key is None and ip_address is None:
+            raise ValueError("Either member_auth_key or ip_address must be specified")
+
+        if member_auth_key is not None and ip_address is not None:
+            condition = "WHERE authentication_key = ? AND ip_address = ?"
+            parameters = (member_auth_key, ip_address)
+        elif member_auth_key is not None:
+            condition = "WHERE authentication_key = ?"
+            parameters = (member_auth_key,)
+        else:
+            condition = "WHERE ip_address = ?"
+            parameters = (ip_address,)
 
         result = self._execute_query(
             community_id,
@@ -57,8 +73,10 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             port,
             creation_date,
             last_connection_date
-            FROM nodes WHERE authentication_key = ?;""",
-            (member_auth_key,),
+            FROM nodes """
+            + condition
+            + ";",
+            parameters,
         )
 
         if len(result) == 0:

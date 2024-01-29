@@ -97,3 +97,102 @@ class TestMemberRepository:
         members = repository.get_members_from_community(community_id)
 
         assert len(members) == 0
+
+    def test_get_member_for_community_with_address(self, temp_folder):
+        """Validates that it is possible to get a member of a specific community"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        ip_address = "127.0.0.1"
+        member = repository.get_member_for_community(
+            community_id, ip_address=ip_address
+        )
+
+        assert member is not None
+        assert member.ip_address == ip_address
+
+    def test_get_member_for_community_with_unknown_address(self, temp_folder):
+        """Validates that it is possible to get a member of a specific community"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        ip_address = "1.1.1.1"
+        member = repository.get_member_for_community(
+            community_id, ip_address=ip_address
+        )
+
+        assert member is None
+
+    def test_get_member_for_community_with_auth_key(self, temp_folder):
+        """Validates that it is possible to get a member of a specific community"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        auth_key = "abc"
+        member = repository.get_member_for_community(
+            community_id, member_auth_key=auth_key
+        )
+
+        assert member is not None
+        assert member.authentication_key == auth_key
+
+    def test_get_member_for_community_with_auth_key_and_address(self, temp_folder):
+        """Validates that it is possible to get a member of a specific community"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        ip_address = "127.0.0.1"
+        auth_key = "abc"
+        member = repository.get_member_for_community(community_id, auth_key, ip_address)
+
+        assert member is not None
+        assert member.authentication_key == auth_key
+        assert member.ip_address == ip_address
+
+    def test_get_member_for_community_with_no_match_auth_key_and_address(
+        self, temp_folder
+    ):
+        """Validates that it is possible to get a member of a specific community"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        ip_address = "127.0.0.3"
+        auth_key = "abc"
+        member = repository.get_member_for_community(community_id, auth_key, ip_address)
+
+        assert member is None

@@ -8,5 +8,7 @@ class IMessageHandler(ABC):
     """Interface for message handlers."""
 
     @abstractmethod
-    def handle_message(self, client: Client, message: MessageDataclass):
+    def handle_message(
+        self, sender: tuple[str, int], client: Client, message: MessageDataclass
+    ):
         """Method to handle a message"""

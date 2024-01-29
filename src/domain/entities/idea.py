@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from src.domain.common.message import Message
+from src.domain.entities.member import Member
 
 
 class Idea(Message):
@@ -15,4 +18,13 @@ class Idea(Message):
     def to_str(self) -> str:
         """Returns a string representation of the idea."""
         author_id = self.author.authentication_key
-        return f"{self.identifier},{self.content},{author_id},{self.creation_date.isoformat()}"
+        date = self.creation_date.isoformat()
+        return f"{self.identifier},{self.content},{author_id},{date}"
+
+    @classmethod
+    def from_str(cls, __value: str):
+        """Returns an instance of the class from a string representation."""
+        identifier, content, author_id, creation_date = __value.split(",", maxsplit=3)
+        author = Member(author_id, None, None)
+        creation_date = datetime.fromisoformat(creation_date)
+        return cls(identifier, content, author, creation_date)

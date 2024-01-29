@@ -11,11 +11,11 @@ class TestOpinion:
     """Test opinion class"""
 
     @pytest.fixture(scope="function", autouse=True, name="author")
-    def fixture_author(self):
+    def fixture_author(self) -> Member:
         """Fixture to create a member"""
         return Member("abc", "127.0.0.1", 1024)
 
-    def test_init(self, author):
+    def test_init(self, author: Member):
         """Validates that an opinion can be created"""
         idea = Idea("1", "Text", author, datetime.now())
 
@@ -23,7 +23,7 @@ class TestOpinion:
 
         assert opinion is not None
 
-    def test_id_attribute(self, author):
+    def test_id_attribute(self, author: Member):
         """Validates that an opinion created with a specified ID has that ID"""
         id_opinion = "1"
         idea = Idea("1", "Text", author, datetime.now())
@@ -31,7 +31,7 @@ class TestOpinion:
 
         assert opinion.identifier == id_opinion
 
-    def test_text_attribute(self, author):
+    def test_text_attribute(self, author: Member):
         """Validates that an opinion created with a specified text has that text"""
         text_opinion = "Text"
         idea = Idea("1", "Text", author, datetime.now())
@@ -39,14 +39,14 @@ class TestOpinion:
 
         assert opinion.content == text_opinion
 
-    def test_author_attribute(self, author):
+    def test_author_attribute(self, author: Member):
         """Validates that an opinion created with a specified author has that author"""
         idea = Idea("1", "Text", author, datetime.now())
         opinion = Opinion("1", "Text", author, datetime.now(), idea)
 
         assert opinion.author == author
 
-    def test_creation_date_attribute(self, author):
+    def test_creation_date_attribute(self, author: Member):
         """Validates that an opinion created with a specified creation date has
         that creation date"""
         creation_date_opinion = datetime.now()
@@ -55,7 +55,7 @@ class TestOpinion:
 
         assert opinion.creation_date == creation_date_opinion
 
-    def test_message_parent_attribute(self, author):
+    def test_message_parent_attribute(self, author: Member):
         """Validates that an opinion created with a specified message parent
         has that message parent"""
         idea = Idea("1", "Text", author, datetime.now())
@@ -63,7 +63,7 @@ class TestOpinion:
 
         assert opinion.parent == idea
 
-    def test_on_opinion(self, author):
+    def test_on_opinion(self, author: Member):
         """Validates that an opinion created with a specified message parent has
         that message parent on opinion"""
 
@@ -74,7 +74,7 @@ class TestOpinion:
         assert opinion.parent == parent_opinion
         assert opinion.parent.parent == idea
 
-    def test_opinions_equality(self, author):
+    def test_opinions_equality(self, author: Member):
         """Validates that two ideas with the same ID are equal"""
         idea = Idea("1", "Text", author, datetime.now())
         opinion = Opinion("2", "Text", author, datetime.now(), idea)
@@ -82,10 +82,33 @@ class TestOpinion:
 
         assert opinion == opinion_copy
 
-    def test_opinion_inequality(self, author):
+    def test_opinion_inequality(self, author: Member):
         """Validates that two ideas with different IDs are not equal"""
         idea = Idea("1", "Text", author, datetime.now())
         opinion = Opinion("1", "Text", author, datetime.now(), idea)
         second_opinion = Opinion("2", "Text", author, datetime.now(), idea)
 
         assert opinion != second_opinion
+
+    def test_opinion_inequality_with_other_type(self, author: Member):
+        """Validates that an opinion is not equal to an object of another type"""
+        idea = Idea("1", "Text", author, datetime.now())
+        opinion = Opinion("1", "Text", author, datetime.now(), idea)
+        other_type = "Text"
+
+        assert opinion != other_type
+
+    def test_opinion_to_str(self, author: Member):
+        """Validates that an opinion can be converted to a string"""
+        idea = Idea("1", "Text", author, datetime.now())
+        opinion = Opinion("1", "Text", author, datetime.now(), idea)
+
+        assert isinstance(opinion.to_str(), str)
+
+    def test_opinion_from_str(self, author: Member):
+        """Validates that an opinion can be created from a string"""
+        idea = Idea("1", "Text", author, datetime.now())
+        opinion = Opinion("1", "Text", author, datetime.now(), idea)
+        opinion_str = opinion.to_str()
+
+        assert Opinion.from_str(opinion_str) == opinion

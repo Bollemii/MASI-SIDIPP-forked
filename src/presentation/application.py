@@ -15,7 +15,6 @@ from src.infrastructure.services.symetric_encryption_service import (
     SymetricEncryptionService,
 )
 from src.infrastructure.services.file_service import FileService
-from src.application.use_cases.create_opinion import CreateOpinion
 from src.application.use_cases.create_community import CreateCommunity
 from src.application.use_cases.add_member import AddMember
 from src.application.use_cases.join_community import JoinCommunity
@@ -23,8 +22,12 @@ from src.application.use_cases.read_communities import ReadCommunities
 from src.application.use_cases.read_ideas_from_community import ReadIdeasFromCommunity
 from src.application.use_cases.read_opinions import ReadOpinions
 from src.application.use_cases.create_idea import CreateIdea
+from src.application.use_cases.create_opinion import CreateOpinion
+from src.application.use_cases.save_idea import SaveIdea
+from src.application.use_cases.save_opinion import SaveOpinion
 from src.presentation.formatting.message_formatter import MessageFormatter
 from src.presentation.handler.message_handler import MessageHandler
+from src.presentation.manager.community_manager import CommunityManager
 from src.presentation.network.server import Server
 from src.presentation.views.menus.main_menu import MainMenu
 
@@ -62,6 +65,10 @@ class Application:
             self.datetime_service,
         )
 
+        self.community_manager = CommunityManager(
+            self.community_repository, self.member_repository, self.file_service
+        )
+
         self.create_community_usecase = CreateCommunity(
             keys_path,
             self.community_repository,
@@ -85,6 +92,7 @@ class Application:
             self.member_repository,
             self.datetime_service,
             self.message_formatter,
+            self.community_manager,
         )
         self.join_community_usecase = JoinCommunity(
             base_path,
@@ -110,6 +118,7 @@ class Application:
             self.symetric_encryption_service,
             self.datetime_service,
             self.message_formatter,
+            self.community_manager,
         )
         self.create_opinion_usecase = CreateOpinion(
             self.machine_service,
@@ -122,9 +131,25 @@ class Application:
             self.file_service,
             self.datetime_service,
             self.message_formatter,
+            self.community_manager,
+        )
+        self.save_idea_usecase = SaveIdea(
+            self.idea_repository,
+            self.symetric_encryption_service,
+            self.community_manager,
+        )
+        self.save_opinion_usecase = SaveOpinion(
+            self.opinion_repository,
+            self.symetric_encryption_service,
+            self.community_manager,
         )
 
-        self.message_handler = MessageHandler(self.join_community_usecase)
+        self.message_handler = MessageHandler(
+            self.community_manager,
+            self.join_community_usecase,
+            self.save_idea_usecase,
+            self.save_opinion_usecase,
+        )
 
         self.server_socket = Server(
             self.machine_service.get_port(),
