@@ -27,4 +27,17 @@ class Opinion(Message):
     def to_str(self) -> str:
         """Returns a string representation of the idea."""
         author_id = self.author.authentication_key
-        return f"{self.identifier},{self.content},{author_id},{self.creation_date.isoformat()},{self.parent.identifier}"
+        date = self.creation_date.isoformat()
+        parent_id = self.parent.identifier
+        return f"{self.identifier},{self.content},{author_id},{date},{parent_id}"
+
+    @classmethod
+    def from_str(cls, __value: str) -> "Opinion":
+        """Creates an opinion from a string."""
+        identifier, content, author_id, creation_date, parent_id = __value.split(
+            ",", maxsplit=4
+        )
+        author = Member(author_id, None, None)
+        creation_date = datetime.fromisoformat(creation_date)
+        parent = Message(parent_id, None, None, None)
+        return cls(identifier, content, author, creation_date, parent)

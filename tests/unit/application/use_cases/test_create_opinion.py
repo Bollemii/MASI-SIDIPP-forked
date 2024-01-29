@@ -21,6 +21,9 @@ class TestCreateOpinion:
 
     @pytest.fixture(scope="function", autouse=True, name="create_opinion_usecase")
     @mock.patch(
+        "src.application.interfaces.icommunity_manager", name="community_manager"
+    )
+    @mock.patch(
         "src.application.interfaces.imessage_formatter", name="message_formatter"
     )
     @mock.patch(
@@ -60,6 +63,7 @@ class TestCreateOpinion:
         file_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
         message_formatter: MagicMock,
+        community_manager: MagicMock,
     ):
         """Create a usecase instance."""
         return CreateOpinion(
@@ -73,6 +77,7 @@ class TestCreateOpinion:
             file_service_mock,
             datetime_service_mock,
             message_formatter,
+            community_manager,
         )
 
     @pytest.fixture(scope="function", autouse=True, name="idea")
@@ -159,7 +164,9 @@ class TestCreateOpinion:
             "cipher",
         )
 
-        message = MessageDataclass(MessageHeader.CREATE_OPINION, "nonce,tag,cipher")
+        message = MessageDataclass(
+            MessageHeader.CREATE_OPINION, "nonce,tag,cipher", "1"
+        )
 
         create_opinion_usecase.execute("1", "1", "content")
 
@@ -261,8 +268,7 @@ class TestCreateOpinion:
 
         create_opinion_usecase.execute("1", "1", "content")
 
-        create_opinion_usecase.community_repository.get_community_encryption_key_path.assert_called_once()
-        create_opinion_usecase.file_service.read_file.assert_called_once()
+        create_opinion_usecase.community_manager.get_community_symetric_key.assert_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_success_output(
@@ -270,6 +276,12 @@ class TestCreateOpinion:
     ):
         """Creating an opinion should return a success output."""
         mock_client.return_value = mock_client
+
+        create_opinion_usecase.symetric_encryption_service.encrypt.return_value = (
+            "nonce",
+            "tag",
+            "cipher",
+        )
 
         output = create_opinion_usecase.execute("1", "1", "content")
 

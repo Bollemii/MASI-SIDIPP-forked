@@ -40,12 +40,12 @@ class Server(IServerSocket):
         self.running = True
         while self._is_running():
             try:
-                client_socket, _ = self.server_socket.accept()
+                client_socket, sender = self.server_socket.accept()
                 client_socket = client.Client(self.message_formatter, client_socket)
                 message, _ = client_socket.receive_message()
                 if not isinstance(message, MessageDataclass):
                     raise MessageError(f"Invalid received message : {message}")
-                self.message_handler.handle_message(client_socket, message)
+                self.message_handler.handle_message(sender, client_socket, message)
 
                 client_socket.close_connection()
             except socket.timeout:

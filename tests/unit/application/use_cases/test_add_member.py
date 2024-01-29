@@ -15,6 +15,9 @@ class TestAddMember:
 
     @pytest.fixture(scope="function", autouse=True, name="add_member_usecase")
     @mock.patch(
+        "src.application.interfaces.icommunity_manager", name="community_manager"
+    )
+    @mock.patch(
         "src.application.interfaces.imessage_formatter", name="message_formatter"
     )
     @mock.patch("src.application.interfaces.idatetime_service", name="datetime_service")
@@ -48,12 +51,10 @@ class TestAddMember:
         member_repository: MagicMock,
         datetime_service: MagicMock,
         message_formatter: MagicMock,
+        community_manager: MagicMock,
     ) -> AddMember:
         """Create a use case for adding a member to a community."""
         uuid_generator.generate.return_value = "auth_code"
-        community_repository.get_community_encryption_key_path.return_value = (
-            "symetric_key_path"
-        )
         community = Community(
             "abc",
             "community_name",
@@ -74,10 +75,8 @@ class TestAddMember:
             "public_key",
             "private_key",
         )
-        file_service.read_file.side_effect = [
-            "symetric_key",
-            b"community_database",
-        ]
+        file_service.read_file.return_value = b"community_database"
+        community_manager.get_community_symetric_key.return_value = "symetric_key"
         return AddMember(
             "base_path",
             uuid_generator,
@@ -89,6 +88,7 @@ class TestAddMember:
             member_repository,
             datetime_service,
             message_formatter,
+            community_manager,
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -289,7 +289,7 @@ class TestAddMember:
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_get_symetric_key_path(
+    def test_get_symetric_key(
         self,
         mock_client: MagicMock,
         add_member_usecase: AddMember,
@@ -305,26 +305,7 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        add_member_usecase.community_repository.get_community_encryption_key_path.assert_called_once()  # pylint: disable=line-too-long
-
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_read_symetric_key(
-        self,
-        mock_client: MagicMock,
-        add_member_usecase: AddMember,
-    ):
-        """Method to test that the symetric key is read"""
-        guest = tuple(["127.0.0.1", 1111])
-        mock_client.receive_message.side_effect = [
-            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
-            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
-            tuple([MessageDataclass(MessageHeader.ACK), guest]),
-        ]
-        mock_client.return_value = mock_client
-
-        add_member_usecase.execute("abc", "127.0.0.1", 1234)
-
-        add_member_usecase.file_service.read_file.assert_any_call("symetric_key_path")
+        add_member_usecase.community_manager.get_community_symetric_key.assert_called_once()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_encrypt_symetric_key(
