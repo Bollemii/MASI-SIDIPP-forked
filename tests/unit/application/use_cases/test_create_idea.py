@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.application.use_cases.create_idea import CreateIdea
-from src.domain.entities.member import Member
 
 
 class TestCreateIdea:
@@ -11,10 +10,10 @@ class TestCreateIdea:
 
     @pytest.fixture(scope="function", autouse=True, name="create_idea_usecase")
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="community_manager"
+        "src.application.interfaces.iarchitecture_manager", name="architecture_manager"
     )
     @mock.patch(
-        "src.application.interfaces.imessage_formatter", name="message_formatter"
+        "src.application.interfaces.icommunity_manager", name="community_manager"
     )
     @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
@@ -22,13 +21,6 @@ class TestCreateIdea:
     @mock.patch(
         "src.application.interfaces.isymetric_encryption_service",
         name="symetric_encryption_service_mock",
-    )
-    @mock.patch("src.application.interfaces.ifile_service", name="file_service_mock")
-    @mock.patch(
-        "src.application.interfaces.icommunity_repository", name="community_repo_mock"
-    )
-    @mock.patch(
-        "src.application.interfaces.imember_repository", name="member_repo_mock"
     )
     @mock.patch("src.application.interfaces.iidea_repository", name="idea_repo_mock")
     @mock.patch(
@@ -43,32 +35,30 @@ class TestCreateIdea:
         machine_service_mock: MagicMock,
         id_generator_service_mock: MagicMock,
         idea_repo_mock: MagicMock,
-        member_repo_mock: MagicMock,
-        community_repo_mock: MagicMock,
-        file_service_mock: MagicMock,
         symetric_encryption_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
-        message_formatter: MagicMock,
         community_manager: MagicMock,
+        architecture_manager: MagicMock,
     ):
         """Create a usecase instance."""
+        symetric_encryption_service_mock.encrypt.return_value = (
+            "nonce",
+            "tag",
+            "cipher",
+        )
+
         return CreateIdea(
             machine_service_mock,
             id_generator_service_mock,
             idea_repo_mock,
-            member_repo_mock,
-            community_repo_mock,
-            file_service_mock,
             symetric_encryption_service_mock,
             datetime_service_mock,
-            message_formatter,
             community_manager,
+            architecture_manager,
         )
 
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_idea_calls_repository(
         self,
-        mock_client: MagicMock,  # pylint: disable=unused-argument
         create_idea_usecase: CreateIdea,
     ):
         """Creating an idea should be possible given the proper arguments."""
@@ -76,161 +66,58 @@ class TestCreateIdea:
 
         create_idea_usecase.idea_repository.add_idea_to_community.assert_called_once()
 
-    @pytest.mark.parametrize(
-        "members",
-        [
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-            ],
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-                Member("auth_key3", "127.0.0.3", 1234),
-            ],
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-                Member("auth_key3", "127.0.0.3", 1234),
-                Member("auth_key4", "127.0.0.4", 1234),
-            ],
-        ],
-    )
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_create_idea_sends_idea_to_other_members(
-        self,
-        mock_client: MagicMock,
-        create_idea_usecase: CreateIdea,
-        members: list[Member],
-    ):
+    def test_create_idea_reads_symetric_key_file(self, create_idea_usecase: CreateIdea):
         """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
-        author = members[0]
-        create_idea_usecase.id_generator_service.generate.return_value = "123"
-        create_idea_usecase.machine_service.get_current_user.return_value = author
-        create_idea_usecase.member_repository.get_members_from_community.return_value = (
-            members
-        )
-        create_idea_usecase.symetric_encryption_service.encrypt.return_value = (
-            "nonce",
-            "tag",
-            "cipher",
-        )
-
-        create_idea_usecase.execute("1", "content")
-
-        mock_client.send_message.assert_called()
-        assert mock_client.send_message.call_count == len(members) - 1
-
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_create_idea_doesnt_send_idea_when_no_members(
-        self, mock_client: MagicMock, create_idea_usecase: CreateIdea
-    ):
-        """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
         content = "content"
-        author = Member("auth_key1", "127.0.0.1", 1234)
         create_idea_usecase.id_generator_service.generate.return_value = "123"
-        create_idea_usecase.machine_service.get_current_user.return_value = author
-
-        create_idea_usecase.execute("1", content)
-
-        mock_client.send_message.assert_not_called()
-
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_create_idea_reads_symetric_key_file(
-        self, mock_client: MagicMock, create_idea_usecase: CreateIdea
-    ):
-        """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
-        content = "content"
-        author = Member("auth_key1", "127.0.0.1", 1234)
-        create_idea_usecase.id_generator_service.generate.return_value = "123"
-        create_idea_usecase.machine_service.get_current_user.return_value = author
 
         create_idea_usecase.execute("1", content)
 
         create_idea_usecase.community_manager.get_community_symetric_key.assert_called()
 
-    @pytest.mark.parametrize(
-        "members",
-        [
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-            ],
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-                Member("auth_key3", "127.0.0.3", 1234),
-            ],
-            [
-                Member("auth_key1", "127.0.0.1", 1234),
-                Member("auth_key2", "127.0.0.2", 1234),
-                Member("auth_key3", "127.0.0.3", 1234),
-                Member("auth_key4", "127.0.0.4", 1234),
-            ],
-        ],
-    )
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_idea_encrypts_data(
         self,
-        mock_client: MagicMock,
         create_idea_usecase: CreateIdea,
-        members: list[Member],
     ):
         """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
-        author = members[0]
         create_idea_usecase.id_generator_service.generate.return_value = "123"
-        create_idea_usecase.machine_service.get_current_user.return_value = author
-        create_idea_usecase.member_repository.get_members_from_community.return_value = (
-            members
-        )
 
         create_idea_usecase.execute("1", "content")
 
         create_idea_usecase.symetric_encryption_service.encrypt.assert_called()
 
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_success_output(
         self,
-        mock_client: MagicMock,
         create_idea_usecase: CreateIdea,
     ):
         """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
-
-        create_idea_usecase.symetric_encryption_service.encrypt.return_value = (
-            "nonce",
-            "tag",
-            "cipher",
-        )
-
         output = create_idea_usecase.execute("1", "content")
 
         assert output == "Success!"
 
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_error_output(
         self,
-        mock_client: MagicMock,
         create_idea_usecase: CreateIdea,
     ):
         """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
         create_idea_usecase.id_generator_service.generate.side_effect = Exception()
 
         output = create_idea_usecase.execute("1", "content")
 
         assert output != "Success!"
 
-    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_idea_should_call_datetime_service(
-        self, mock_client: MagicMock, create_idea_usecase: CreateIdea
+        self, create_idea_usecase: CreateIdea
     ):
         """Creating an idea should be possible given the proper arguments."""
-        mock_client.return_value = mock_client
         create_idea_usecase.execute("1", "content")
 
         create_idea_usecase.datetime_service.get_datetime.assert_called_once()
+
+    def test_create_idea_share_message_to_community(
+        self, create_idea_usecase: CreateIdea
+    ):
+        """Creating an idea should be possible given the proper arguments."""
+        create_idea_usecase.execute("1", "content")
+
+        create_idea_usecase.architecture_manager.share.assert_called_once()

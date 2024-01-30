@@ -31,13 +31,16 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             self._execute_statement(
                 community_id,
                 """INSERT INTO nodes
-                (authentication_key, ip_address, port, creation_date)
-                VALUES (?, ?, ?, ?);""",
+                (authentication_key, ip_address, port, creation_date, last_connection_date)
+                VALUES (?, ?, ?, ?, ?);""",
                 (
                     member.authentication_key,
                     member.ip_address,
                     member.port,
-                    str(member.creation_date),
+                    member.creation_date.isoformat(),
+                    member.last_connection_date.isoformat()
+                    if member.last_connection_date is not None
+                    else None,
                 ),
             )
         except sqlite3.IntegrityError as error:

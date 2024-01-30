@@ -1,3 +1,4 @@
+from src.application.interfaces.iarchitecture_manager import IArchitectureManager
 from src.application.interfaces.icommunity_manager import ICommunityManager
 from src.domain.entities.member import Member
 from src.application.interfaces.idatetime_service import IDatetimeService
@@ -39,6 +40,7 @@ class AddMember(IAddMember):
         datetime_service: IDatetimeService,
         message_formatter: IMessageFormatter,
         community_manager: ICommunityManager,
+        architecture_manager: IArchitectureManager,
     ):
         self.base_path = base_path
         self.asymetric_encryption_service = asymetric_encryption_service
@@ -51,6 +53,7 @@ class AddMember(IAddMember):
         self.datetime_service = datetime_service
         self.message_formatter = message_formatter
         self.community_manager = community_manager
+        self.architecture_manager = architecture_manager
 
         self.public_key: str
         self.private_key: str
@@ -77,7 +80,10 @@ class AddMember(IAddMember):
             if received_auth_key != auth_key:
                 raise AuthentificationFailedError("Authentification key not valid")
 
-            self._add_member_to_community(community_id, auth_key, ip_address, port)
+            member = Member(
+                auth_key, ip_address, port, self.datetime_service.get_datetime()
+            )
+            self._add_member_to_community(community_id, member)
 
             self.symetric_key = self.community_manager.get_community_symetric_key(
                 community_id
@@ -87,6 +93,8 @@ class AddMember(IAddMember):
             self._send_community_informations(client_socket, community_id)
             self._receive_acknowledgement(client_socket)
             self._send_community_database(client_socket, self.base_path, community_id)
+
+            self._share_add_member_message(community_id, member)
 
             return "Success!"
         except AuthentificationFailedError as error:
@@ -142,13 +150,8 @@ class AddMember(IAddMember):
 
         return decrypted_auth_key
 
-    def _add_member_to_community(
-        self, community_id: str, auth_key: str, ip_address: str, port: int
-    ):
+    def _add_member_to_community(self, community_id: str, member: Member):
         """Add the member to the community"""
-        member = Member(
-            auth_key, ip_address, port, self.datetime_service.get_datetime()
-        )
         self.member_repository.add_member_to_community(community_id, member)
 
     def _send_community_symetric_key(self, client_socket: IClientSocket):
@@ -202,3 +205,17 @@ class AddMember(IAddMember):
     def _send_reject_message(self, client_socket: IClientSocket, message: str):
         """Send a reject message to the new member"""
         client_socket.send_message(MessageDataclass(MessageHeader.REJECT, message))
+
+    def _share_add_member_message(self, community_id: str, member: Member):
+        """Share the add member message"""
+        (nonce, tag, cipher) = self.symetric_encryption_service.encrypt(
+            member.to_str(), self.symetric_key
+        )
+        message_dataclass = MessageDataclass(
+            MessageHeader.ADD_MEMBER,
+            f"{nonce},{tag},{cipher}",
+            community_id,
+        )
+        self.architecture_manager.share(
+            message_dataclass, community_id, [member.authentication_key]
+        )

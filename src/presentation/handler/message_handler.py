@@ -1,6 +1,7 @@
 from src.application.interfaces.icommunity_manager import ICommunityManager
 from src.application.interfaces.imessage_handler import IMessageHandler
 from src.application.interfaces.isave_idea import ISaveIdea
+from src.application.interfaces.isave_member import ISaveMember
 from src.application.interfaces.isave_opinion import ISaveOpinion
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
@@ -16,11 +17,13 @@ class MessageHandler(IMessageHandler):
         self,
         community_manager: ICommunityManager,
         join_community_usecase: IJoinCommunity,
+        save_member_usecase: ISaveMember,
         save_idea_usecase: ISaveIdea,
         save_opinion_usecase: ISaveOpinion,
     ):
         self.community_manager = community_manager
         self.join_community_usecase = join_community_usecase
+        self.save_member_usecase = save_member_usecase
         self.save_idea_usecase = save_idea_usecase
         self.save_opinion_usecase = save_opinion_usecase
 
@@ -36,6 +39,8 @@ class MessageHandler(IMessageHandler):
         match message.header:
             case MessageHeader.INVITATION:
                 self.join_community_usecase.execute(client)
+            case MessageHeader.ADD_MEMBER:
+                self.save_member_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_IDEA:
                 self.save_idea_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_OPINION:

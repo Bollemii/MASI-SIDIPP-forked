@@ -70,3 +70,28 @@ class TestMember:
         member2 = "abc"
 
         assert member != member2
+
+    def test_member_to_str(self):
+        """Validate that a member can be converted to a string"""
+        date = datetime.now()
+        member = Member("abc", "127.0.0.1", 1024, date, date)
+        date_str = date.isoformat()
+        expected = f"abc,127.0.0.1,1024,{date_str},{date_str}"
+
+        assert member.to_str() == expected
+
+    def test_member_from_str(self):
+        """Validate that a member can be created from a string"""
+        member = Member("abc", "127.0.0.1", 1024, datetime.now())
+
+        member_str = member.to_str()
+
+        assert Member.from_str(member_str) == member
+
+    def test_member_from_str_with_last_connection_date(self):
+        """Validate that a member can be created from a string with last connection date"""
+        member = Member("abc", "127.0.0.1", 1024, datetime.now(), datetime.now())
+
+        member_str = member.to_str()
+
+        assert Member.from_str(member_str) == member

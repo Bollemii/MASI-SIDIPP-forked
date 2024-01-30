@@ -22,7 +22,7 @@ class Idea(Message):
         return f"{self.identifier},{self.content},{author_id},{date}"
 
     @classmethod
-    def from_str(cls, __value: str):
+    def from_str(cls, __value: str) -> "Idea":
         """Returns an instance of the class from a string representation."""
         identifier, content, author_id, creation_date = __value.split(",", maxsplit=3)
         author = Member(author_id, None, None)

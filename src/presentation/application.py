@@ -1,5 +1,6 @@
 import os
 import threading
+from src.application.use_cases.save_member import SaveMember
 
 from src.infrastructure.repositories.community_repository import CommunityRepository
 from src.infrastructure.repositories.member_repository import MemberRepository
@@ -97,6 +98,7 @@ class Application:
             self.datetime_service,
             self.message_formatter,
             self.community_manager,
+            self.architecture_manager,
         )
         self.join_community_usecase = JoinCommunity(
             base_path,
@@ -116,26 +118,25 @@ class Application:
             self.machine_service,
             self.id_generator,
             self.idea_repository,
-            self.member_repository,
-            self.community_repository,
-            self.file_service,
             self.symetric_encryption_service,
             self.datetime_service,
-            self.message_formatter,
             self.community_manager,
+            self.architecture_manager,
         )
         self.create_opinion_usecase = CreateOpinion(
             self.machine_service,
             self.id_generator,
             self.idea_repository,
             self.opinion_repository,
-            self.member_repository,
-            self.community_repository,
             self.symetric_encryption_service,
-            self.file_service,
             self.datetime_service,
-            self.message_formatter,
             self.community_manager,
+            self.architecture_manager,
+        )
+        self.save_member_usecase = SaveMember(
+            self.member_repository,
+            self.community_manager,
+            self.symetric_encryption_service,
         )
         self.save_idea_usecase = SaveIdea(
             self.idea_repository,
@@ -151,6 +152,7 @@ class Application:
         self.message_handler = MessageHandler(
             self.community_manager,
             self.join_community_usecase,
+            self.save_member_usecase,
             self.save_idea_usecase,
             self.save_opinion_usecase,
         )

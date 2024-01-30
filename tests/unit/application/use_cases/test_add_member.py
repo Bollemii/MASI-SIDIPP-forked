@@ -15,6 +15,9 @@ class TestAddMember:
 
     @pytest.fixture(scope="function", autouse=True, name="add_member_usecase")
     @mock.patch(
+        "src.application.interfaces.iarchitecture_manager", name="architecture_manager"
+    )
+    @mock.patch(
         "src.application.interfaces.icommunity_manager", name="community_manager"
     )
     @mock.patch(
@@ -52,6 +55,7 @@ class TestAddMember:
         datetime_service: MagicMock,
         message_formatter: MagicMock,
         community_manager: MagicMock,
+        architecture_manager: MagicMock,
     ) -> AddMember:
         """Create a use case for adding a member to a community."""
         uuid_generator.generate.return_value = "auth_code"
@@ -70,12 +74,14 @@ class TestAddMember:
         symetric_encryption_service.encrypt.side_effect = [
             ("nonce", "tag", "encr_informations"),
             ("nonce", "tag", "encr_database"),
+            ("nonce", "tag", "encr_member"),
         ]
         machine_service.get_asymetric_key_pair.return_value = (
             "public_key",
             "private_key",
         )
         file_service.read_file.return_value = b"community_database"
+        datetime_service.get_datetime.return_value = datetime(1970, 1, 1, 00, 00, 00)
         community_manager.get_community_symetric_key.return_value = "symetric_key"
         return AddMember(
             "base_path",
@@ -89,6 +95,7 @@ class TestAddMember:
             datetime_service,
             message_formatter,
             community_manager,
+            architecture_manager,
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -605,3 +612,44 @@ class TestAddMember:
         add_member_usecase.execute("abc", ip_address, port)
 
         add_member_usecase.datetime_service.get_datetime.assert_called_once()
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_add_member_encrypt_member(
+        self, mock_client, add_member_usecase: AddMember
+    ):
+        """Method to test that the member is encrypted"""
+        guest = tuple(["127.0.0.1", 1664])
+        mock_client.receive_message.side_effect = [
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
+        ]
+        mock_client.return_value = mock_client
+        ip_address = "127.0.0.1"
+        port = 1664
+
+        add_member_usecase.execute("abc", ip_address, port)
+
+        add_member_usecase.symetric_encryption_service.encrypt.assert_any_call(
+            "auth_code,127.0.0.1,1664,1970-01-01T00:00:00,None",
+            "symetric_key",
+        )
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_add_member_share_added_member_message(
+        self, mock_client, add_member_usecase: AddMember
+    ):
+        """Method to test that the added member message is shared"""
+        guest = tuple(["127.0.0.1", 1664])
+        mock_client.receive_message.side_effect = [
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            tuple([MessageDataclass(MessageHeader.ACK), guest]),
+        ]
+        mock_client.return_value = mock_client
+        ip_address = "127.0.0.1"
+        port = 1664
+
+        add_member_usecase.execute("abc", ip_address, port)
+
+        add_member_usecase.architecture_manager.share.assert_called_once()
