@@ -227,7 +227,7 @@ class TestCreateIdea:
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_create_idea_should_call_datetime_service(
-        self, mock_client, create_idea_usecase: CreateIdea
+        self, mock_client: MagicMock, create_idea_usecase: CreateIdea
     ):
         """Creating an idea should be possible given the proper arguments."""
         mock_client.return_value = mock_client

@@ -27,6 +27,7 @@ from src.application.use_cases.save_idea import SaveIdea
 from src.application.use_cases.save_opinion import SaveOpinion
 from src.presentation.formatting.message_formatter import MessageFormatter
 from src.presentation.handler.message_handler import MessageHandler
+from src.presentation.manager.architecture_manager import ArchitectureManager
 from src.presentation.manager.community_manager import CommunityManager
 from src.presentation.network.server import Server
 from src.presentation.views.menus.main_menu import MainMenu
@@ -67,6 +68,9 @@ class Application:
 
         self.community_manager = CommunityManager(
             self.community_repository, self.member_repository, self.file_service
+        )
+        self.architecture_manager = ArchitectureManager(
+            self.member_repository, self.message_formatter, self.machine_service
         )
 
         self.create_community_usecase = CreateCommunity(
