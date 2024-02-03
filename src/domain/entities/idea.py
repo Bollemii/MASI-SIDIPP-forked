@@ -7,6 +7,8 @@ from src.domain.entities.member import Member
 class Idea(Message):
     """Idea class"""
 
+    CONTENT_MIN_LENGTH = 4
+
     # This class is a subclass of Message, so it inherits all the attributes and methods of Message.
     # The __init__ method of this class is overriding the __init__ method of Message.
 

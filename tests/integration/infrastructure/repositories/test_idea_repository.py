@@ -32,6 +32,15 @@ class TestIdeaRrepository:
 
         assert os.path.exists(f"{temp_folder}/{community_id}.sqlite")
 
+    def test_add_idea_with_invalid_name(self, author: Member, temp_folder: str):
+        """Add an idea with an invalid name should raise an error"""
+        community_id = "1234"
+        idea = Idea("1", "c", author)
+        repository = IdeaRepository(temp_folder)
+
+        with pytest.raises(ValueError):
+            repository.add_idea_to_community(community_id, idea)
+
     def test_get_ideas_by_community(self, author: Member, temp_folder: str):
         """Validates that it is possible to get ideas by community"""
         community_id = "1234"
@@ -57,3 +66,14 @@ class TestIdeaRrepository:
         result = repository.get_idea_from_community(community_id, idea.identifier)
 
         assert result.identifier == idea.identifier
+
+    def test_get_idea_from_community_not_found(self, author: Member, temp_folder: str):
+        """Get an idea that does not exist should return None"""
+        community_id = "1234"
+        idea = Idea("1", "content", author)
+        repository = IdeaRepository(temp_folder)
+        repository.add_idea_to_community(community_id, idea)
+
+        result = repository.get_idea_from_community(community_id, "2")
+
+        assert result is None

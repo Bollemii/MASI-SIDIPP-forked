@@ -6,6 +6,8 @@ from src.domain.entities.member import Member
 class Community:
     """A community is a group of people who share a common interest."""
 
+    NAME_MIN_LENGTH = 4
+
     def __init__(
         self,
         identifier: str,

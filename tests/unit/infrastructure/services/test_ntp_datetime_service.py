@@ -44,9 +44,22 @@ class TestNtpDatetimeService:
         self, ntpclient_mock: MagicMock, ntp_server: str
     ):
         """Should return epoch time when exception occurs"""
-        ntpclient_mock.request.side_effect = Exception()
+        ntpclient_mock.return_value.request.side_effect = Exception()
         datetime_service = NtpDatetimeService(ntp_server)
 
         datetime = datetime_service.get_datetime()
 
         assert datetime.isoformat() == "1970-01-01T00:00:01+00:00"
+
+    @mock.patch("datetime.datetime", name="datetime_mock")
+    @mock.patch("ntplib.NTPClient", name="ntpclient_mock")
+    def test_get_datetime_with_exception_mocked(
+        self, ntpclient_mock: MagicMock, datetime_mock: MagicMock
+    ):
+        """Should return epoch time when exception occurs"""
+        ntpclient_mock.return_value.request.side_effect = Exception()
+        datetime_service = NtpDatetimeService("pool.ntp.org")
+
+        datetime_service.get_datetime()
+
+        datetime_mock.fromisoformat.assert_called_once_with("1970-01-01T00:00:01+00:00")

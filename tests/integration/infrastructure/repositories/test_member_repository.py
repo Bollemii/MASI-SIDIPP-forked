@@ -196,3 +196,10 @@ class TestMemberRepository:
         member = repository.get_member_for_community(community_id, auth_key, ip_address)
 
         assert member is None
+
+    def test_get_member_for_community_with_no_parameter(self, temp_folder):
+        """Get a member with no parameters should raise an error"""
+        repository = MemberRepository(temp_folder)
+
+        with pytest.raises(ValueError):
+            repository.get_member_for_community("1234")

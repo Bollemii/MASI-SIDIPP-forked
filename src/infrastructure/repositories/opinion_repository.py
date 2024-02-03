@@ -22,6 +22,11 @@ class OpinionRepository(IOpinionRepository, SqliteRepository):
     def add_opinion_to_community(self, community_id: str, opinion: Opinion) -> None:
         self.initialize_if_not_exists(community_id)
 
+        if len(opinion.content) < Opinion.CONTENT_MIN_LENGTH:
+            raise ValueError(
+                f"Opinion content must be at least {Opinion.CONTENT_MIN_LENGTH} characters long."
+            )
+
         self._execute_statement(
             community_id,
             """INSERT INTO messages(

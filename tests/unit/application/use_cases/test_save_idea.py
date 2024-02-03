@@ -113,3 +113,16 @@ class TestSaveIdea:
         result = save_idea.execute("community_id", "nonce,tag,cipher_idea")
 
         assert result != "Success!"
+
+    def test_save_idea_with_invalid_content(
+        self,
+        save_idea: SaveIdea,
+    ):
+        """Saving an idea with invalid content should return an error message."""
+        save_idea.symetric_encryption_service.decrypt.return_value = (
+            "identifier,c,author_id,1970-01-01T00:00:00"
+        )
+
+        result = save_idea.execute("community_id", "nonce,tag,cipher_idea")
+
+        assert result != "Success!"

@@ -35,6 +35,11 @@ class CommunityRepository(ICommunityRepository, SqliteRepository):
         self, community: Community, member_auth_key: str, encryption_key_path: str
     ) -> None:
         try:
+            if len(community.name) < Community.NAME_MIN_LENGTH:
+                raise ValueError(
+                    f"Name must be at least {Community.NAME_MIN_LENGTH} characters long."
+                )
+
             self._execute_statement(
                 CommunityRepository.index_database,
                 """INSERT INTO communities (

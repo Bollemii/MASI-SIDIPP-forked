@@ -1,4 +1,5 @@
 from consolemenu.prompt_utils import UserQuit
+from src.domain.entities.community import Community
 
 from src.presentation.views.generics.form import Form
 from src.presentation.views.generics.menu import Menu
@@ -15,7 +16,16 @@ class CreateCommunityForm(Form):
     def execute(self):
         """Executes the interaction with the user"""
         try:
-            name = self._prompt_user("Nom de la communauté", enable_quit=True)
+            is_valid = False
+            while not is_valid:
+                name = self._prompt_user("Nom de la communauté", enable_quit=True)
+
+                is_valid = len(name) >= Community.NAME_MIN_LENGTH
+                if not is_valid:
+                    self._print_error(
+                        "Le nom de la communauté doit contenir au moins 4 caractères."
+                    )
+
             description = self._prompt_user(
                 "Description de la communauté (Entrée pour ignorer): "
             )

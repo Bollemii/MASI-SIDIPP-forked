@@ -43,6 +43,11 @@ class CreateCommunity(ICreateCommunity):
 
     def execute(self, name: str, description: str) -> str:
         try:
+            if len(name) < Community.NAME_MIN_LENGTH:
+                raise ValueError(
+                    f"Name must be at least {Community.NAME_MIN_LENGTH} characters long."
+                )
+
             member = self._create_member()
             community = self._create_community(name, description, member)
 

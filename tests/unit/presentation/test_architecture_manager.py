@@ -178,3 +178,28 @@ class TestArchitectureManager:
         architecture_manager.share(message, community_id)
 
         mock_client.send_message.assert_not_called()
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_share_socket_error(
+        self, mock_client: MagicMock, architecture_manager: ArchitectureManager
+    ):
+        """Test share method."""
+        mock_client.return_value = mock_client
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+
+        community_id = "community_id"
+        message = MessageDataclass(MessageHeader.CREATE_IDEA, "content", community_id)
+
+        architecture_manager.member_repository.get_members_from_community.return_value = (
+            members
+        )
+        architecture_manager.machine_service.get_current_user.return_value = members[0]
+        mock_client.connect_to_server.side_effect = Exception()
+
+        architecture_manager.share(message, community_id)
+
+        mock_client.send_message.assert_not_called()

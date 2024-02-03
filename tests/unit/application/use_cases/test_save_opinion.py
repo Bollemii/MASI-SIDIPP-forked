@@ -111,8 +111,21 @@ class TestSaveOpinion:
         community_manager: MagicMock,
         save_opinion: SaveOpinion,
     ):
-        """Test saving an opinion."""
+        """Saving an opinion with an author that is not a member should return an error message."""
         community_manager.is_community_member.return_value = False
+        result = save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
+
+        assert result != "Success!"
+
+    def test_save_opinion_with_invalid_content(
+        self,
+        save_opinion: SaveOpinion,
+    ):
+        """Saving an opinion with invalid content should return an error message."""
+        save_opinion.symetric_encryption_service.decrypt.return_value = (
+            "identifier,c,author_id,1970-01-01T00:00:00"
+        )
+
         result = save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
 
         assert result != "Success!"

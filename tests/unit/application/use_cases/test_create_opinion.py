@@ -152,10 +152,18 @@ class TestCreateOpinion:
 
         create_opinion_usecase.datetime_service.get_datetime.assert_called_once()
 
-    def test_create_idea_share_message_to_community(
+    def test_create_opinion_share_message_to_community(
         self, create_opinion_usecase: CreateOpinion
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an opinion should call the architecture manager to share the message."""
         create_opinion_usecase.execute("1", "1", "content")
 
         create_opinion_usecase.architecture_manager.share.assert_called_once()
+
+    def test_create_opinion_with_invalid_content(
+        self, create_opinion_usecase: CreateOpinion
+    ):
+        """Creating an opinion should return an error message if the content is invalid."""
+        result = create_opinion_usecase.execute("1", "1", "c")
+
+        assert result != "Success!"

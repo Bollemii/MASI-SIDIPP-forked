@@ -40,6 +40,11 @@ class CreateOpinion(ICreateOpinion):
 
     def execute(self, community_id: str, idea_or_opinion_id: str, content: str) -> str:
         try:
+            if len(content) < Opinion.CONTENT_MIN_LENGTH:
+                raise ValueError(
+                    f"Content must be at least {Opinion.CONTENT_MIN_LENGTH} characters long."
+                )
+
             symetric_key = self.community_manager.get_community_symetric_key(
                 community_id
             )

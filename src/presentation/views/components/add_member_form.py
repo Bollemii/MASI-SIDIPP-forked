@@ -25,9 +25,21 @@ class AddMemberForm(Form):
     def execute(self):
         """Executes the interaction with the user"""
         try:
-            ip_address = self._prompt_user(
-                "Adresse IP du nouveau membre", enable_quit=True
-            )
+            is_valid = False
+            while not is_valid:
+                ip_address = self._prompt_user(
+                    "Adresse IP du nouveau membre", enable_quit=True
+                )
+
+                values = ip_address.split(".")
+                is_valid = len(values) == 4
+                is_valid = is_valid and all(value.isdigit() for value in values)
+                is_valid = is_valid and all(0 <= int(value) <= 255 for value in values)
+
+                if not is_valid:
+                    self._print_error(
+                        "L'adresse IP est invalide (format : 255.255.255.255)."
+                    )
 
             result = self.add_member_usecase.execute(
                 self.community.identifier,

@@ -47,6 +47,15 @@ class TestCommunityRepository:
         with pytest.raises(CommunityAlreadyExistsError):
             repository.add_community(community, "abc", file_name)
 
+    def test_add_community_with_invalid_name(self, temp_folder, file_name):
+        """Add a community with an invalid name should raise an error"""
+        repository = CommunityRepository(temp_folder)
+
+        with pytest.raises(ValueError):
+            repository.add_community(
+                Community("1234", "n", "description"), "abc", file_name
+            )
+
     def test_get_community_returns_none_if_not_found(
         self, temp_folder, community: Community
     ):
@@ -99,6 +108,18 @@ class TestCommunityRepository:
 
         assert actual_auth_key == auth_key
 
+    def test_get_authentication_key_for_community_returns_none_if_not_found(
+        self, temp_folder, community: Community
+    ):
+        """Test that the get_member_auth_key_for_community method returns None if the community is not found"""
+        repository = CommunityRepository(temp_folder)
+
+        actual_auth_key = repository.get_authentication_key_for_community(
+            community.identifier
+        )
+
+        assert actual_auth_key is None
+
     def test_get_community_symetric_encryption_key_path(
         self, temp_folder, file_name, community: Community
     ):
@@ -112,3 +133,16 @@ class TestCommunityRepository:
         )
 
         assert actual_symetric_key_path == file_name
+
+    def test_get_community_symetric_encryption_key_path_returns_none_if_not_found(
+        self, temp_folder, community: Community
+    ):
+        """Test that the get_community_symetric_encryption_key_path method
+        returns None if the community is not found"""
+        repository = CommunityRepository(temp_folder)
+
+        actual_symetric_key_path = repository.get_community_encryption_key_path(
+            community.identifier
+        )
+
+        assert actual_symetric_key_path is None

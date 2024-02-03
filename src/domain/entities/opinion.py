@@ -8,6 +8,8 @@ from src.domain.entities.idea import Idea  # pylint: disable=unused-import
 class Opinion(Message):
     """Opinion class"""
 
+    CONTENT_MIN_LENGTH = 4
+
     def __init__(
         self,
         identifier: str,

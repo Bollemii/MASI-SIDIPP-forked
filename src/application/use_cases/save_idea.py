@@ -36,6 +36,8 @@ class SaveIdea(ISaveIdea):
                 community_id, idea.author.authentication_key
             ):
                 raise ValueError("Author is not a member of the community.")
+            if len(idea.content) < Idea.CONTENT_MIN_LENGTH:
+                raise ValueError("Content is too short.")
 
             self.idea_repository.add_idea_to_community(community_id, idea)
             return "Success!"

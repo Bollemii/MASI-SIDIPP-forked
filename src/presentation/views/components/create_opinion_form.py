@@ -14,21 +14,29 @@ class CreateOpinionForm(Form):
         self,
         parent_menu: Menu,
         community: Community,
-        idea_or_opinion: Idea | Opinion,
+        parent: Idea | Opinion,
         create_opinion_usecase: ICreateOpinion,
     ):
         super().__init__(parent_menu)
         self.community = community
-        self.idea_or_opinion = idea_or_opinion
+        self.parent = parent
         self.create_opinion_usecase = create_opinion_usecase
 
     def execute(self):
         """Executes the interaction with the user"""
         try:
-            idea_content = self._prompt_user("Décrivez votre opinion", enable_quit=True)
+            is_valid = False
+            while not is_valid:
+                opinion_content = self._prompt_user(
+                    "Décrivez votre opinion", enable_quit=True
+                )
+
+                is_valid = len(opinion_content) >= Opinion.CONTENT_MIN_LENGTH
+                if not is_valid:
+                    self._print_error("L'opinion doit contenir au moins 4 caractères.")
 
             result = self.create_opinion_usecase.execute(
-                self.community.identifier, self.idea_or_opinion.identifier, idea_content
+                self.community.identifier, self.parent.identifier, opinion_content
             )
 
             self._print_result_message(result)

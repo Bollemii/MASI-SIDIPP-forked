@@ -22,6 +22,11 @@ class IdeaRepository(IIdeaRepository, SqliteRepository):
     def add_idea_to_community(self, community_id: str, idea: Idea) -> None:
         self.initialize_if_not_exists(community_id)
 
+        if len(idea.content) < Idea.CONTENT_MIN_LENGTH:
+            raise ValueError(
+                f"Content must be at least {Idea.CONTENT_MIN_LENGTH} characters long."
+            )
+
         self._execute_statement(
             community_id,
             """INSERT INTO messages(

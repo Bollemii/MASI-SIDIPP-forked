@@ -1,6 +1,7 @@
 from consolemenu.prompt_utils import UserQuit
 
 from src.domain.entities.community import Community
+from src.domain.entities.idea import Idea
 from src.presentation.views.generics.form import Form
 from src.presentation.views.generics.menu import Menu
 from src.application.interfaces.icreate_idea import ICreateIdea
@@ -19,7 +20,15 @@ class CreateIdeaForm(Form):
     def execute(self):
         """Executes the interaction with the user"""
         try:
-            idea_content = self._prompt_user("Décrivez votre idée", enable_quit=True)
+            is_valid = False
+            while not is_valid:
+                idea_content = self._prompt_user(
+                    "Décrivez votre idée", enable_quit=True
+                )
+
+                is_valid = len(idea_content) >= Idea.CONTENT_MIN_LENGTH
+                if not is_valid:
+                    self._print_error("L'idée doit contenir au moins 4 caractères.")
 
             result = self.create_idea_usecase.execute(
                 self.community.identifier, idea_content

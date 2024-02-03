@@ -37,6 +37,11 @@ class CreateIdea(ICreateIdea):
     def execute(self, community_id: str, content: str) -> str:
         """Create an idea."""
         try:
+            if len(content) < Idea.CONTENT_MIN_LENGTH:
+                raise ValueError(
+                    f"Content must be at least {Idea.CONTENT_MIN_LENGTH} characters long."
+                )
+
             symetric_key = self.community_manager.get_community_symetric_key(
                 community_id
             )

@@ -67,7 +67,7 @@ class TestCreateIdea:
         create_idea_usecase.idea_repository.add_idea_to_community.assert_called_once()
 
     def test_create_idea_reads_symetric_key_file(self, create_idea_usecase: CreateIdea):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should call the community manager to get the symetric key."""
         content = "content"
         create_idea_usecase.id_generator_service.generate.return_value = "123"
 
@@ -79,7 +79,7 @@ class TestCreateIdea:
         self,
         create_idea_usecase: CreateIdea,
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should call the symetric encryption service to encrypt the data."""
         create_idea_usecase.id_generator_service.generate.return_value = "123"
 
         create_idea_usecase.execute("1", "content")
@@ -90,7 +90,7 @@ class TestCreateIdea:
         self,
         create_idea_usecase: CreateIdea,
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should return a success message."""
         output = create_idea_usecase.execute("1", "content")
 
         assert output == "Success!"
@@ -99,7 +99,7 @@ class TestCreateIdea:
         self,
         create_idea_usecase: CreateIdea,
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should return an error message if something goes wrong"""
         create_idea_usecase.id_generator_service.generate.side_effect = Exception()
 
         output = create_idea_usecase.execute("1", "content")
@@ -109,7 +109,7 @@ class TestCreateIdea:
     def test_create_idea_should_call_datetime_service(
         self, create_idea_usecase: CreateIdea
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should call the datetime service to get the current datetime."""
         create_idea_usecase.execute("1", "content")
 
         create_idea_usecase.datetime_service.get_datetime.assert_called_once()
@@ -117,7 +117,13 @@ class TestCreateIdea:
     def test_create_idea_share_message_to_community(
         self, create_idea_usecase: CreateIdea
     ):
-        """Creating an idea should be possible given the proper arguments."""
+        """Creating an idea should call the architecture manager to share the message to the community."""
         create_idea_usecase.execute("1", "content")
 
         create_idea_usecase.architecture_manager.share.assert_called_once()
+
+    def test_create_idea_with_invalid_content(self, create_idea_usecase: CreateIdea):
+        """Creating an idea with invalid content should return an error message."""
+        result = create_idea_usecase.execute("1", "c")
+
+        assert result != "Success!"

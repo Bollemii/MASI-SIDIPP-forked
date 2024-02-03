@@ -172,3 +172,11 @@ class TestCreateCommunity:
         create_community_mocks.execute(name, description)
 
         create_community_mocks.datetime_service.get_datetime.assert_called_once()
+
+    def test_create_community_with_invalid_name(
+        self, create_community_mocks: CreateCommunity
+    ):
+        """Creating a community with an invalid name should return an error message."""
+        result = create_community_mocks.execute("a", "description")
+
+        assert result != "Success!"

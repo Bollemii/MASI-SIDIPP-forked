@@ -40,6 +40,18 @@ class TestOpinionRrepository:
 
         assert os.path.exists(f"{temp_folder}/{community_id}.sqlite")
 
+    def test_add_opinion_with_invalid_name(self, author, temp_folder):
+        """Add an opinion with an invalid name should raise an error"""
+        community_id = "1234"
+        idea = Idea("1", "An idea", author, datetime.now())
+        opinion = Opinion("2", "c", author, datetime.now(), idea)
+        idea_repository = IdeaRepository(temp_folder)
+        opinion_repository = OpinionRepository(temp_folder)
+
+        idea_repository.add_idea_to_community(community_id, idea)
+        with pytest.raises(ValueError):
+            opinion_repository.add_opinion_to_community(community_id, opinion)
+
     def test_get_opinions_by_parent(self, author, temp_folder):
         """Validates that it is possible to get a messages by message parent"""
         community_id = "1234"
@@ -75,3 +87,17 @@ class TestOpinionRrepository:
         )
 
         assert result.identifier == opinion.identifier
+
+    def test_get_opinion_from_community_not_found(self, author, temp_folder):
+        """Get an opinion that does not exist should return None"""
+        community_id = "1234"
+        idea = Idea("1", "content", author)
+        opinion = Opinion("2", "content", author, datetime.now(), idea)
+        idea_repository = IdeaRepository(temp_folder)
+        opinion_repository = OpinionRepository(temp_folder)
+        idea_repository.add_idea_to_community(community_id, idea)
+        opinion_repository.add_opinion_to_community(community_id, opinion)
+
+        result = opinion_repository.get_opinion_from_community(community_id, "3")
+
+        assert result is None

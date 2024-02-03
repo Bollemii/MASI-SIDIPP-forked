@@ -36,6 +36,8 @@ class SaveOpinion(ISaveOpinion):
                 community_id, opinion.author.authentication_key
             ):
                 raise ValueError("Author is not a member of the community.")
+            if len(opinion.content) < Opinion.CONTENT_MIN_LENGTH:
+                raise ValueError("Content is too short.")
 
             self.opinion_repository.add_opinion_to_community(community_id, opinion)
             return "Success!"
