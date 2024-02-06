@@ -203,3 +203,29 @@ class TestMemberRepository:
 
         with pytest.raises(ValueError):
             repository.get_member_for_community("1234")
+
+    def test_clear_members_relationship(self, temp_folder):
+        """Validates that it is possible to clear the relationship of all members"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        repository.add_member_to_community(community_id, members[0], "child")
+        repository.add_member_to_community(community_id, members[1], "parent")
+        repository.add_member_to_community(community_id, members[2], "None")
+
+        repository.clear_members_relationship(community_id)
+
+    def test_update_member_relationship(self, temp_folder):
+        """Validates update the relationship of a member in a specific community"""
+        member = Member("abc", "127.0.0.1", 0)
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        repository.add_member_to_community(community_id, member)
+
+        repository.update_member_relationship(
+            community_id, member.authentication_key, "child"
+        )

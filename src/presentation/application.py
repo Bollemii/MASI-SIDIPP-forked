@@ -108,6 +108,7 @@ class Application:
             self.machine_service,
             self.file_service,
             self.community_repository,
+            self.member_repository,
         )
         self.read_communities_usecase = ReadCommunities(self.community_repository)
         self.read_ideas_from_community_usecase = ReadIdeasFromCommunity(

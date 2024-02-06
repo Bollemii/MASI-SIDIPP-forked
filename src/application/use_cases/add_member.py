@@ -152,7 +152,7 @@ class AddMember(IAddMember):
 
     def _add_member_to_community(self, community_id: str, member: Member):
         """Add the member to the community"""
-        self.member_repository.add_member_to_community(community_id, member)
+        self.member_repository.add_member_to_community(community_id, member, "child")
 
     def _send_community_symetric_key(self, client_socket: IClientSocket):
         """Send the symetric key to the new member"""
@@ -169,7 +169,8 @@ class AddMember(IAddMember):
     ):
         """Get the community informations"""
         community = self.community_repository.get_community(community_id)
-        informations = community.to_str()
+        auth_key = self.machine_service.get_auth_key(community_id)
+        informations = f"{auth_key},{community.to_str()}"
 
         (nonce, tag, encrypted_informations) = self.symetric_encryption_service.encrypt(
             informations, self.symetric_key

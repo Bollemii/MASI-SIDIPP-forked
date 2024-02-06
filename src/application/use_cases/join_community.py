@@ -12,6 +12,7 @@ from src.application.interfaces.isymetric_encryption_service import (
 )
 from src.application.interfaces.iclient_socket import IClientSocket
 from src.application.interfaces.icommunity_repository import ICommunityRepository
+from src.application.interfaces.imember_repository import IMemberRepository
 from src.domain.entities.community import Community
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
@@ -29,6 +30,7 @@ class JoinCommunity(IJoinCommunity):
         machine_service: IMachineService,
         file_service: IFileService,
         community_repository: ICommunityRepository,
+        member_repository: IMemberRepository,
     ):
         self.base_path = base_path
         self.keys_folder_path = keys_folder_path
@@ -37,6 +39,7 @@ class JoinCommunity(IJoinCommunity):
         self.machine_service = machine_service
         self.file_service = file_service
         self.community_repository = community_repository
+        self.member_repository = member_repository
 
         self.public_key: str
         self.private_key: str
@@ -58,7 +61,9 @@ class JoinCommunity(IJoinCommunity):
 
             self.symetric_key = self._receive_symetric_key(client_socket)
 
-            community = self._receive_community_informations(client_socket)
+            parent_auth_key, community = self._receive_community_informations(
+                client_socket
+            )
 
             symetric_key_path = self._save_symetric_key(community.identifier)
             self._save_community_informations(community, auth_key, symetric_key_path)
@@ -66,6 +71,8 @@ class JoinCommunity(IJoinCommunity):
 
             community_database = self._receive_community_database(client_socket)
             self._save_community_database(community.identifier, community_database)
+
+            self._update_members_relationship(community.identifier, parent_auth_key)
 
             return "Success!"
         except Exception as error:
@@ -126,7 +133,7 @@ class JoinCommunity(IJoinCommunity):
 
     def _receive_community_informations(
         self, client_socket: IClientSocket
-    ) -> Community:
+    ) -> tuple[str, Community]:
         """Receive the community informations"""
         informations_message, _ = client_socket.receive_message()
 
@@ -141,7 +148,11 @@ class JoinCommunity(IJoinCommunity):
             encr_community_informations, self.symetric_key, tag, nonce
         )
 
-        return Community.from_str(community_informations)
+        parent_auth_key, community_informations = community_informations.split(
+            ",", maxsplit=1
+        )
+
+        return parent_auth_key, Community.from_str(community_informations)
 
     def _save_symetric_key(self, community_id: str) -> str:
         """Save the symetric key"""
@@ -184,3 +195,13 @@ class JoinCommunity(IJoinCommunity):
         community_database_path = f"{self.base_path}/{community_id}.sqlite"
         database_bytes = bytes.fromhex(community_database)
         self.file_service.write_file(community_database_path, database_bytes)
+
+    def _update_members_relationship(self, community_id: str, parent_auth_key: str):
+        """Update the members relationship"""
+        self.member_repository.clear_members_relationship(community_id)
+
+        self.member_repository.update_member_relationship(
+            community_id,
+            parent_auth_key,
+            "parent",
+        )

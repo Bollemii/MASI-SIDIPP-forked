@@ -12,6 +12,10 @@ class TestJoinCommunity:
 
     @pytest.fixture(scope="function", autouse=True, name="join_community_use_case")
     @mock.patch(
+        "src.application.interfaces.imember_repository",
+        name="member_repository",
+    )
+    @mock.patch(
         "src.application.interfaces.icommunity_repository",
         name="community_repository",
     )
@@ -38,6 +42,7 @@ class TestJoinCommunity:
         machine_service: MagicMock,
         file_service: MagicMock,
         community_repository: MagicMock,
+        member_repository: MagicMock,
     ) -> JoinCommunity:
         """Create the use case for join the community"""
         machine_service.get_asymetric_key_pair.return_value = (
@@ -45,7 +50,7 @@ class TestJoinCommunity:
             "private_key",
         )
         symetric_encryption_service.decrypt.side_effect = [
-            "id,name,description,2021-01-01T00:00:00",
+            "parent_auth_key,id,name,description,2021-01-01T00:00:00",
             "6465637279707465645f6461746162617365",
         ]
         asymetric_encryption_service.encrypt.return_value = "encr_auth_key"
@@ -62,6 +67,7 @@ class TestJoinCommunity:
             machine_service,
             file_service,
             community_repository,
+            member_repository,
         )
 
     @pytest.fixture(scope="function", autouse=True, name="mock_client")
@@ -101,6 +107,18 @@ class TestJoinCommunity:
 
         message = MessageDataclass(MessageHeader.DATA, "public_key")
         mock_client.send_message.assert_any_call(message)
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_receive_public_key_failed(
+        self, join_community_use_case: JoinCommunity, mock_client: MagicMock
+    ):
+        """Test if the public key is not received"""
+        mock_client.receive_message.return_value = None
+
+        result = join_community_use_case.execute(mock_client)
+
+        assert result != "Success!"
+        join_community_use_case.community_repository.add_community.assert_not_called()
 
     def test_received_auth_key_decryption(
         self, join_community_use_case: JoinCommunity, mock_client: MagicMock
@@ -197,6 +215,15 @@ class TestJoinCommunity:
         join_community_use_case.file_service.write_file.assert_any_call(
             "base_path/id.sqlite", b"decrypted_database"
         )
+
+    def test_update_member_relationships(
+        self, join_community_use_case: JoinCommunity, mock_client: MagicMock
+    ):
+        """Test that the member relationships are updated"""
+        join_community_use_case.execute(mock_client)
+
+        join_community_use_case.member_repository.clear_members_relationship.assert_called_once()
+        join_community_use_case.member_repository.update_member_relationship.assert_called_once()
 
     def test_connection_closed(
         self,

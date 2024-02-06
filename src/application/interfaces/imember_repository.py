@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Literal
 
 from src.domain.entities.member import Member
 
@@ -11,8 +12,29 @@ class IMemberRepository(ABC):
         """Initialize the requirements"""
 
     @abstractmethod
-    def add_member_to_community(self, community_id: str, member: Member) -> None:
+    def add_member_to_community(
+        self,
+        community_id: str,
+        member: Member,
+        relationship: Literal["parent", "child"] | None = None,
+    ) -> None:
         """Add a member to a specific community"""
+
+    @abstractmethod
+    def clear_members_relationship(
+        self,
+        community_id: str,
+    ) -> None:
+        """Clear the relationship of all members"""
+
+    @abstractmethod
+    def update_member_relationship(
+        self,
+        community_id: str,
+        auth_key: str,
+        relationship: Literal["parent", "child"] | None,
+    ):
+        """Update the relationship of a member in a specific community"""
 
     @abstractmethod
     def get_member_for_community(

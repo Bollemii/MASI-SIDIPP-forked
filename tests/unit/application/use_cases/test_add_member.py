@@ -80,6 +80,7 @@ class TestAddMember:
             "public_key",
             "private_key",
         )
+        machine_service.get_auth_key.return_value = "auth_key"
         file_service.read_file.return_value = b"community_database"
         datetime_service.get_datetime.return_value = datetime(1970, 1, 1, 00, 00, 00)
         community_manager.get_community_symetric_key.return_value = "symetric_key"
@@ -140,6 +141,21 @@ class TestAddMember:
         add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
         mock_client.send_message.assert_any_call(message)
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_receive_public_key_failed(
+        self,
+        mock_client: MagicMock,
+        add_member_usecase: AddMember,
+    ):
+        """Method to test if the public key is not received"""
+        mock_client.receive_message.return_value = None
+        mock_client.return_value = mock_client
+
+        result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
+
+        assert result != "Success!"
+        add_member_usecase.member_repository.add_member_to_community.assert_not_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_send_public_key(
@@ -222,6 +238,25 @@ class TestAddMember:
         mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_receive_auth_key_failed(
+        self,
+        mock_client: MagicMock,
+        add_member_usecase: AddMember,
+    ):
+        """Method to test if the auth key is not received"""
+        guest = tuple(["127.0.0.1", 1111])
+        mock_client.receive_message.side_effect = [
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            None,
+        ]
+        mock_client.return_value = mock_client
+
+        result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
+
+        assert result != "Success!"
+        add_member_usecase.member_repository.add_member_to_community.assert_not_called()
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_auth_key_decryption(
         self,
         mock_client: MagicMock,
@@ -292,7 +327,7 @@ class TestAddMember:
         add_member_usecase.execute(community_id, ip_address, port)
 
         add_member_usecase.member_repository.add_member_to_community.assert_called_once_with(
-            community_id, member
+            community_id, member, "child"
         )
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -465,8 +500,9 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
+        add_member_usecase.machine_service.get_auth_key.assert_any_call("abc")
         add_member_usecase.symetric_encryption_service.encrypt.assert_any_call(
-            "community_informations",
+            "auth_key,community_informations",
             "symetric_key",
         )
 
@@ -491,6 +527,26 @@ class TestAddMember:
             MessageHeader.INFORMATIONS, "nonce,tag,encr_informations"
         )
         mock_client.send_message.assert_any_call(message)
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_receive_acknowledgement_failed(
+        self,
+        mock_client: MagicMock,
+        add_member_usecase: AddMember,
+    ):
+        """Method to test if the auth key is not received"""
+        guest = tuple(["127.0.0.1", 1111])
+        mock_client.receive_message.side_effect = [
+            tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
+            tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
+            None,
+        ]
+        mock_client.return_value = mock_client
+
+        result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
+
+        assert result != "Success!"
+        add_member_usecase.member_repository.update_member_relationship.assert_not_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_get_community_database(
