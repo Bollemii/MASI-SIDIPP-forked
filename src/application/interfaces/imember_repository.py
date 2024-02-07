@@ -46,5 +46,7 @@ class IMemberRepository(ABC):
         """Get a member of a specific community"""
 
     @abstractmethod
-    def get_members_from_community(self, community_id: str) -> list[Member]:
+    def get_members_from_community(
+        self, community_id: str, is_related: bool = False
+    ) -> list[Member]:
         """Get all members of a specific community"""

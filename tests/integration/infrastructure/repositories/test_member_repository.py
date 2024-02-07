@@ -68,7 +68,10 @@ class TestMemberRepository:
         "members",
         [
             [Member("abc", "127.0.0.1", 0)],
-            [Member("abc", "127.0.0.1", 0), Member("abc2", "127.0.0.2", 0)],
+            [
+                Member("abc", "127.0.0.1", 0),
+                Member("abc2", "127.0.0.2", 0),
+            ],
             [
                 Member("abc", "127.0.0.1", 0),
                 Member("abc2", "127.0.0.2", 0),
@@ -97,6 +100,24 @@ class TestMemberRepository:
         members = repository.get_members_from_community(community_id)
 
         assert len(members) == 0
+
+    def test_get_members_from_community_related(self, temp_folder):
+        """Validates that it is possible to get all related members"""
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+
+        community_id = "1234"
+        repository = MemberRepository(temp_folder)
+        repository.add_member_to_community(community_id, members[0], "parent")
+        repository.add_member_to_community(community_id, members[1])
+        repository.add_member_to_community(community_id, members[2], "child")
+
+        actual_members = repository.get_members_from_community(community_id, True)
+
+        assert len(actual_members) == 2
 
     def test_get_member_for_community_with_address(self, temp_folder):
         """Validates that it is possible to get a member of a specific community"""

@@ -15,6 +15,10 @@ class TestMessageHandler:
     @mock.patch(
         "src.application.interfaces.icommunity_manager", name="mock_community_manager"
     )
+    @mock.patch(
+        "src.application.interfaces.iarchitecture_manager",
+        name="mock_architecture_manager",
+    )
     @mock.patch("src.application.interfaces.isave_member", name="mock_save_member")
     @mock.patch("src.application.interfaces.isave_idea", name="mock_save_idea")
     @mock.patch("src.application.interfaces.isave_opinion", name="mock_save_opinion")
@@ -27,12 +31,14 @@ class TestMessageHandler:
         mock_save_opinion: MagicMock,
         mock_save_idea: MagicMock,
         mock_save_member: MagicMock,
+        mock_architecture_manager: MagicMock,
         mock_community_manager: MagicMock,
     ) -> MessageHandler:
         """Fixture to create a MessageHandler instance."""
         mock_community_manager.is_community_member.return_value = True
         return MessageHandler(
             mock_community_manager,
+            mock_architecture_manager,
             join_community_usecase,
             mock_save_member,
             mock_save_idea,

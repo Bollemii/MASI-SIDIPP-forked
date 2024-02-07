@@ -158,19 +158,25 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             ),
         )
 
-    def get_members_from_community(self, community_id: str) -> list[Member]:
+    def get_members_from_community(
+        self, community_id: str, is_related: bool = False
+    ) -> list[Member]:
         """Get all members from a community."""
         self.initialize_if_not_exists(community_id)
 
-        result = self._execute_query(
-            community_id,
-            """SELECT
+        statement = """SELECT
             authentication_key,
             ip_address,
             port,
             creation_date,
             last_connection_date
-            FROM nodes;""",
+            FROM nodes""" + (
+            " WHERE relationship_id IS NOT NULL;" if is_related else ";"
+        )
+
+        result = self._execute_query(
+            community_id,
+            statement,
         )
 
         members = []

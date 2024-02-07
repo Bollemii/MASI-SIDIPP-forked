@@ -1,3 +1,4 @@
+from src.application.interfaces.iarchitecture_manager import IArchitectureManager
 from src.application.interfaces.icommunity_manager import ICommunityManager
 from src.application.interfaces.imessage_handler import IMessageHandler
 from src.application.interfaces.isave_idea import ISaveIdea
@@ -16,12 +17,14 @@ class MessageHandler(IMessageHandler):
     def __init__(
         self,
         community_manager: ICommunityManager,
+        architecture_manager: IArchitectureManager,
         join_community_usecase: IJoinCommunity,
         save_member_usecase: ISaveMember,
         save_idea_usecase: ISaveIdea,
         save_opinion_usecase: ISaveOpinion,
     ):
         self.community_manager = community_manager
+        self.architecture_manager = architecture_manager
         self.join_community_usecase = join_community_usecase
         self.save_member_usecase = save_member_usecase
         self.save_idea_usecase = save_idea_usecase
@@ -47,3 +50,8 @@ class MessageHandler(IMessageHandler):
                 self.save_opinion_usecase.execute(message.community_id, message.content)
             case _:
                 raise MessageError("Invalid header in the message.")
+
+        if message.header != MessageHeader.INVITATION:
+            self.architecture_manager.share(
+                message, message.community_id, excluded_ip_addresses=[sender[0]]
+            )

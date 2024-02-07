@@ -11,6 +11,8 @@ class IArchitectureManager(ABC):
         self,
         message: MessageDataclass,
         community_id: str,
-        excluded_auth_keys: list[str] | None = None,
+        excluded_auth_keys: list[str] = [],
+        excluded_ip_addresses: list[str] = [],
     ):
-        """Share a message to all members off architecture of a community (except the author and specified excluded_auth_keys)."""
+        """Share a message to related members of architecture in a community
+        (except the author and specified excluded)."""

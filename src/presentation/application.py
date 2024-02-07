@@ -152,6 +152,7 @@ class Application:
 
         self.message_handler = MessageHandler(
             self.community_manager,
+            self.architecture_manager,
             self.join_community_usecase,
             self.save_member_usecase,
             self.save_idea_usecase,

@@ -24,12 +24,17 @@ class ArchitectureManager(IArchitectureManager):
         message: MessageDataclass,
         community_id: str,
         excluded_auth_keys: list[str] = [],
+        excluded_ip_addresses: list[str] = [],
     ):
         author = self.machine_service.get_current_user(community_id)
         excluded_auth_keys.append(author.authentication_key)
+        excluded_ip_addresses.append(author.ip_address)
         members = filter(
-            lambda member: member.authentication_key not in excluded_auth_keys,
-            self.member_repository.get_members_from_community(community_id),
+            lambda member: member.authentication_key not in excluded_auth_keys
+            and member.ip_address not in excluded_ip_addresses,
+            self.member_repository.get_members_from_community(
+                community_id, is_related=True
+            ),
         )
         for member in members:
             client_socket: client.Client = None
