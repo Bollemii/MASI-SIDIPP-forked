@@ -120,11 +120,12 @@ class JoinCommunity(IJoinCommunity):
         """Receive the symetric key"""
         encrypted_symetric_key_message, _ = client_socket.receive_message()
 
+        if not encrypted_symetric_key_message:
+            raise AuthentificationFailedError("No symetric key received")
+
         if encrypted_symetric_key_message.header == MessageHeader.REJECT:
             raise AuthentificationFailedError(encrypted_symetric_key_message.content)
 
-        if not encrypted_symetric_key_message:
-            raise AuthentificationFailedError("No symetric key received")
         symetric_key = self.asymetric_encryption_service.decrypt(
             encrypted_symetric_key_message.content, self.private_key
         )

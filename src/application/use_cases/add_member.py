@@ -99,7 +99,7 @@ class AddMember(IAddMember):
             return "Success!"
         except AuthentificationFailedError as error:
             self._send_reject_message(client_socket, error.inner_error)
-            return error.inner_error
+            return str(error)
         except Exception as error:
             return str(error)
         finally:
@@ -177,9 +177,7 @@ class AddMember(IAddMember):
         )
 
         message = f"{nonce},{tag},{encrypted_informations}"
-        client_socket.send_message(
-            MessageDataclass(MessageHeader.INFORMATIONS, message)
-        )
+        client_socket.send_message(MessageDataclass(MessageHeader.DATA, message))
 
     def _receive_acknowledgement(self, client_socket: IClientSocket):
         """Receive the acknowledgement"""

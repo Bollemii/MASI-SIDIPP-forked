@@ -149,12 +149,13 @@ class TestAddMember:
         add_member_usecase: AddMember,
     ):
         """Method to test if the public key is not received"""
-        mock_client.receive_message.return_value = None
+        mock_client.receive_message.return_value = (None, None)
         mock_client.return_value = mock_client
 
         result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
         assert result != "Success!"
+        assert "No public key received" in result
         add_member_usecase.member_repository.add_member_to_community.assert_not_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -247,13 +248,14 @@ class TestAddMember:
         guest = tuple(["127.0.0.1", 1111])
         mock_client.receive_message.side_effect = [
             tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
-            None,
+            (None, None),
         ]
         mock_client.return_value = mock_client
 
         result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
         assert result != "Success!"
+        assert "Authentification key not valid" in result
         add_member_usecase.member_repository.add_member_to_community.assert_not_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -523,9 +525,7 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        message = MessageDataclass(
-            MessageHeader.INFORMATIONS, "nonce,tag,encr_informations"
-        )
+        message = MessageDataclass(MessageHeader.DATA, "nonce,tag,encr_informations")
         mock_client.send_message.assert_any_call(message)
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
@@ -539,13 +539,14 @@ class TestAddMember:
         mock_client.receive_message.side_effect = [
             tuple([MessageDataclass(MessageHeader.DATA, "public_key"), guest]),
             tuple([MessageDataclass(MessageHeader.DATA, "encr_auth_code"), guest]),
-            None,
+            (None, None),
         ]
         mock_client.return_value = mock_client
 
         result = add_member_usecase.execute("abc", "127.0.0.1", 1024)
 
         assert result != "Success!"
+        assert "No acknowledgement received" in result
         add_member_usecase.member_repository.update_member_relationship.assert_not_called()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")

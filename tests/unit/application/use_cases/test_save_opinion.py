@@ -123,9 +123,11 @@ class TestSaveOpinion:
     ):
         """Saving an opinion with invalid content should return an error message."""
         save_opinion.symetric_encryption_service.decrypt.return_value = (
-            "identifier,c,author_id,1970-01-01T00:00:00"
+            "identifier,c,author_id,1970-01-01T00:00:00,parent_id"
         )
 
         result = save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
 
         assert result != "Success!"
+        assert result == "Content is too short."
+        save_opinion.opinion_repository.add_opinion_to_community.assert_not_called()

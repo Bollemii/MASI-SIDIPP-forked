@@ -35,6 +35,21 @@ class TestClient:
     @mock.patch(
         "src.application.interfaces.imessage_formatter", name="message_formatter"
     )
+    def test_client_init_failed(
+        self, message_formatter: MagicMock, mock_socket: MagicMock
+    ):
+        """Test init client"""
+        mock_socket.side_effect = SocketError("Error message")
+
+        with pytest.raises(SocketError) as error:
+            Client(message_formatter)
+
+        assert "Error message" in str(error.value)
+
+    @mock.patch("socket.socket")
+    @mock.patch(
+        "src.application.interfaces.imessage_formatter", name="message_formatter"
+    )
     def test_connect_to_server(
         self, message_formatter: MagicMock, mock_socket: MagicMock
     ):
@@ -58,8 +73,10 @@ class TestClient:
         client = Client(message_formatter)
 
         mock_socket.return_value.connect.side_effect = SocketError("Connection refused")
-        with pytest.raises(SocketError):
+        with pytest.raises(SocketError) as error:
             client.connect_to_server("127.0.0.1", 1024)
+
+        assert "Connection refused" in str(error.value)
 
     @mock.patch("socket.socket")
     @mock.patch(
@@ -91,6 +108,25 @@ class TestClient:
         mock_socket.return_value.send.assert_called_once_with((message).encode())
 
         client.close_connection()
+
+    @mock.patch("socket.socket")
+    @mock.patch(
+        "src.application.interfaces.imessage_formatter", name="message_formatter"
+    )
+    def test_send_message_failed(
+        self, message_formatter: MagicMock, mock_socket: MagicMock
+    ):
+        """Test send messages"""
+        mock_socket.return_value.send.side_effect = SocketError("Error message")
+
+        client = Client(message_formatter)
+        message = "Hello I am the client"
+
+        with pytest.raises(SocketError) as error:
+            client.send_message(message)
+            client.close_connection()
+
+        assert "Error message" in str(error.value)
 
     @mock.patch("socket.socket")
     @mock.patch(

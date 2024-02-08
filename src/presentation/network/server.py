@@ -44,6 +44,7 @@ class Server(IServerSocket):
                 client_socket = client.Client(self.message_formatter, client_socket)
                 message, _ = client_socket.receive_message()
                 if not isinstance(message, MessageDataclass):
+                    client_socket.close_connection()
                     raise MessageError(f"Invalid received message : {message}")
                 self.message_handler.handle_message(sender, client_socket, message)
 

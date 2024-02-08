@@ -167,3 +167,17 @@ class TestCreateOpinion:
         result = create_opinion_usecase.execute("1", "1", "c")
 
         assert result != "Success!"
+
+    def test_create_opinion_with_no_parent(self, create_opinion_usecase: CreateOpinion):
+        """Creating an opinion should return an error if it has no parent"""
+        create_opinion_usecase.idea_repository.get_idea_from_community.return_value = (
+            None
+        )
+        create_opinion_usecase.opinion_repository.get_opinion_from_community.return_value = (
+            None
+        )
+
+        result = create_opinion_usecase.execute("1", "1", "content")
+
+        assert result != "Success!"
+        assert "Parent not found" in result
