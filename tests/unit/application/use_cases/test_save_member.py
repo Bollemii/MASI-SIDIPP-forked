@@ -13,7 +13,7 @@ class TestSaveMember:
         "src.application.interfaces.imember_repository", name="mock_member_repository"
     )
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="mock_community_manager"
+        "src.application.interfaces.icommunity_service", name="mock_community_service"
     )
     @mock.patch(
         "src.application.interfaces.isymetric_encryption_service",
@@ -22,7 +22,7 @@ class TestSaveMember:
     def create_save_member_usecase(
         self,
         mock_symetric_encryption_service: MagicMock,
-        mock_community_manager: MagicMock,
+        mock_community_service: MagicMock,
         mock_member_repository: MagicMock,
     ) -> SaveMember:
         """Fixture to create a SaveMember instance."""
@@ -31,7 +31,7 @@ class TestSaveMember:
         )
         return SaveMember(
             mock_member_repository,
-            mock_community_manager,
+            mock_community_service,
             mock_symetric_encryption_service,
         )
 
@@ -62,7 +62,7 @@ class TestSaveMember:
         """Test saving a member."""
         save_member.execute("community_id", "nonce,tag,cipher_member")
 
-        save_member.community_manager.get_community_symetric_key.assert_called_once()
+        save_member.community_service.get_community_symetric_key.assert_called_once()
 
     def test_save_member_call_decrypt(
         self,

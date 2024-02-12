@@ -30,28 +30,28 @@ class TestSaveIdea:
         )
         return mock_symetric_encryption_service
 
-    @pytest.fixture(scope="function", autouse=True, name="community_manager")
+    @pytest.fixture(scope="function", autouse=True, name="community_service")
     @mock.patch(
-        "src.application.interfaces.icommunity_manager",
-        name="mock_community_manager",
+        "src.application.interfaces.icommunity_service",
+        name="mock_community_service",
     )
-    def create_community_manager(self, mock_community_manager: MagicMock) -> MagicMock:
+    def create_community_service(self, mock_community_service: MagicMock) -> MagicMock:
         """Create a community manager instance"""
-        mock_community_manager.get_community_symetric_key.return_value = "symetric_key"
-        return mock_community_manager
+        mock_community_service.get_community_symetric_key.return_value = "symetric_key"
+        return mock_community_service
 
     @pytest.fixture(scope="function", autouse=True, name="save_idea")
     def create_save_idea(
         self,
         symetric_encryption_service: MagicMock,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         idea_repository: MagicMock,
     ) -> SaveIdea:
         """Create a SaveIdea instance."""
         return SaveIdea(
             idea_repository,
             symetric_encryption_service,
-            community_manager,
+            community_service,
         )
 
     def test_save_idea_successful(self, save_idea: SaveIdea):
@@ -74,13 +74,13 @@ class TestSaveIdea:
 
     def test_get_symetric_key(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_idea: SaveIdea,
     ):
         """Test getting the symetric key."""
         save_idea.execute("community_id", "nonce,tag,cipher_idea")
 
-        community_manager.get_community_symetric_key.assert_called_once()
+        community_service.get_community_symetric_key.assert_called_once()
 
     def test_decrypt(
         self,
@@ -94,21 +94,21 @@ class TestSaveIdea:
 
     def test_is_community_member(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_idea: SaveIdea,
     ):
         """Test checking if the author is a community member."""
         save_idea.execute("community_id", "nonce,tag,cipher_idea")
 
-        community_manager.is_community_member.assert_called_once()
+        community_service.is_community_member.assert_called_once()
 
     def test_save_idea_failed_author_not_member(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_idea: SaveIdea,
     ):
         """Test saving an idea with an author that is not a member."""
-        community_manager.is_community_member.return_value = False
+        community_service.is_community_member.return_value = False
 
         result = save_idea.execute("community_id", "nonce,tag,cipher_idea")
 

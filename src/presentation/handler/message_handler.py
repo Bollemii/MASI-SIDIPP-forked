@@ -1,5 +1,5 @@
 from src.application.interfaces.iarchitecture_manager import IArchitectureManager
-from src.application.interfaces.icommunity_manager import ICommunityManager
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.application.interfaces.imessage_handler import IMessageHandler
 from src.application.interfaces.isave_idea import ISaveIdea
 from src.application.interfaces.isave_member import ISaveMember
@@ -16,14 +16,14 @@ class MessageHandler(IMessageHandler):
 
     def __init__(
         self,
-        community_manager: ICommunityManager,
+        community_service: ICommunityService,
         architecture_manager: IArchitectureManager,
         join_community_usecase: IJoinCommunity,
         save_member_usecase: ISaveMember,
         save_idea_usecase: ISaveIdea,
         save_opinion_usecase: ISaveOpinion,
     ):
-        self.community_manager = community_manager
+        self.community_service = community_service
         self.architecture_manager = architecture_manager
         self.join_community_usecase = join_community_usecase
         self.save_member_usecase = save_member_usecase
@@ -34,7 +34,7 @@ class MessageHandler(IMessageHandler):
         self, sender: tuple[str, int], client: Client, message: MessageDataclass
     ):
         if message.header != MessageHeader.INVITATION:
-            if not self.community_manager.is_community_member(
+            if not self.community_service.is_community_member(
                 message.community_id, ip_address=sender[0]
             ):
                 raise MessageError("User is not a member of the community.")
@@ -48,10 +48,13 @@ class MessageHandler(IMessageHandler):
                 self.save_idea_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_OPINION:
                 self.save_opinion_usecase.execute(message.community_id, message.content)
+            case MessageHeader.PING:
+                client.send_message(MessageDataclass(MessageHeader.PONG))
+                client.close_connection()
             case _:
                 raise MessageError("Invalid header in the message.")
 
         if message.header != MessageHeader.INVITATION:
-            self.architecture_manager.share(
+            self.architecture_manager.share_information(
                 message, message.community_id, excluded_ip_addresses=[sender[0]]
             )

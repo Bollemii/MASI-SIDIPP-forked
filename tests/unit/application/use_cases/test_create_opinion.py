@@ -22,7 +22,7 @@ class TestCreateOpinion:
         "src.application.interfaces.iarchitecture_manager", name="architecture_manager"
     )
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="community_manager"
+        "src.application.interfaces.icommunity_service", name="community_service"
     )
     @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
@@ -50,7 +50,7 @@ class TestCreateOpinion:
         opinion_repo_mock: MagicMock,
         symetric_encryption_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         architecture_manager: MagicMock,
     ):
         """Create a usecase instance."""
@@ -67,7 +67,7 @@ class TestCreateOpinion:
             opinion_repo_mock,
             symetric_encryption_service_mock,
             datetime_service_mock,
-            community_manager,
+            community_service,
             architecture_manager,
         )
 
@@ -126,7 +126,7 @@ class TestCreateOpinion:
         """Creating an opinion should call the symetric encryption method"""
         create_opinion_usecase.execute("1", "1", "content")
 
-        create_opinion_usecase.community_manager.get_community_symetric_key.assert_called()
+        create_opinion_usecase.community_service.get_community_symetric_key.assert_called()
 
     def test_success_output(self, create_opinion_usecase: CreateOpinion):
         """Creating an opinion should return a success output."""
@@ -158,7 +158,7 @@ class TestCreateOpinion:
         """Creating an opinion should call the architecture manager to share the message."""
         create_opinion_usecase.execute("1", "1", "content")
 
-        create_opinion_usecase.architecture_manager.share.assert_called_once()
+        create_opinion_usecase.architecture_manager.share_information.assert_called_once()
 
     def test_create_opinion_with_invalid_content(
         self, create_opinion_usecase: CreateOpinion

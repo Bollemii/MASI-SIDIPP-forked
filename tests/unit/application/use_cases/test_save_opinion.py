@@ -18,15 +18,15 @@ class TestSaveOpinion:
         """Create a SaveOpinion instance."""
         return mock_opinion_repository
 
-    @pytest.fixture(scope="function", autouse=True, name="community_manager")
+    @pytest.fixture(scope="function", autouse=True, name="community_service")
     @mock.patch(
-        "src.application.interfaces.icommunity_manager",
-        name="mock_community_manager",
+        "src.application.interfaces.icommunity_service",
+        name="mock_community_service",
     )
-    def create_community_manager(self, mock_community_manager: MagicMock) -> MagicMock:
+    def create_community_service(self, mock_community_service: MagicMock) -> MagicMock:
         """Create a community manager instance"""
-        mock_community_manager.get_community_symetric_key.return_value = "symetric_key"
-        return mock_community_manager
+        mock_community_service.get_community_symetric_key.return_value = "symetric_key"
+        return mock_community_service
 
     @pytest.fixture(scope="function", autouse=True, name="symetric_encryption_service")
     @mock.patch(
@@ -46,14 +46,14 @@ class TestSaveOpinion:
     def create_save_opinion(
         self,
         symetric_encryption_service: MagicMock,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         opinion_repository: MagicMock,
     ) -> SaveOpinion:
         """Create a SaveOpinion instance."""
         return SaveOpinion(
             opinion_repository,
             symetric_encryption_service,
-            community_manager,
+            community_service,
         )
 
     def test_save_opinion_successful(self, save_opinion: SaveOpinion):
@@ -78,13 +78,13 @@ class TestSaveOpinion:
 
     def test_get_symetric_key(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_opinion: SaveOpinion,
     ):
         """Test getting the symetric key."""
         save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
 
-        community_manager.get_community_symetric_key.assert_called_once()
+        community_service.get_community_symetric_key.assert_called_once()
 
     def test_decrypt(
         self,
@@ -98,21 +98,21 @@ class TestSaveOpinion:
 
     def test_is_community_member(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_opinion: SaveOpinion,
     ):
         """Test checking if the author is a member of the community."""
         save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
 
-        community_manager.is_community_member.assert_called_once()
+        community_service.is_community_member.assert_called_once()
 
     def test_save_opinion_failed_author_not_member(
         self,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         save_opinion: SaveOpinion,
     ):
         """Saving an opinion with an author that is not a member should return an error message."""
-        community_manager.is_community_member.return_value = False
+        community_service.is_community_member.return_value = False
         result = save_opinion.execute("community_id", "nonce,tag,cipher_opinion")
 
         assert result != "Success!"

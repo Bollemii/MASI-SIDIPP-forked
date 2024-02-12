@@ -8,11 +8,11 @@ from src.application.interfaces.iopinion_repository import IOpinionRepository
 from src.application.interfaces.isymetric_encryption_service import (
     ISymetricEncryptionService,
 )
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.domain.entities.opinion import Opinion
 from src.domain.exceptions.parent_not_found_error import ParentNotFoundError
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
-from src.presentation.manager.community_manager import CommunityManager
 
 
 class CreateOpinion(ICreateOpinion):
@@ -26,7 +26,7 @@ class CreateOpinion(ICreateOpinion):
         opinion_repository: IOpinionRepository,
         symetric_encryption_service: ISymetricEncryptionService,
         datetime_service: IDatetimeService,
-        community_manager: CommunityManager,
+        community_service: ICommunityService,
         architecture_manager: IArchitectureManager,
     ):
         self.machine_service = machine_service
@@ -35,7 +35,7 @@ class CreateOpinion(ICreateOpinion):
         self.opinion_repository = opinion_repository
         self.symetric_encryption_service = symetric_encryption_service
         self.datetime_service = datetime_service
-        self.community_manager = community_manager
+        self.community_service = community_service
         self.architecture_manager = architecture_manager
 
     def execute(self, community_id: str, idea_or_opinion_id: str, content: str) -> str:
@@ -45,7 +45,7 @@ class CreateOpinion(ICreateOpinion):
                     f"Content must be at least {Opinion.CONTENT_MIN_LENGTH} characters long."
                 )
 
-            symetric_key = self.community_manager.get_community_symetric_key(
+            symetric_key = self.community_service.get_community_symetric_key(
                 community_id
             )
             author = self.machine_service.get_current_user(community_id)
@@ -76,7 +76,7 @@ class CreateOpinion(ICreateOpinion):
                 f"{nonce},{tag},{cipher}",
                 community_id,
             )
-            self.architecture_manager.share(message_dataclass, community_id)
+            self.architecture_manager.share_information(message_dataclass, community_id)
 
             return "Success!"
         except Exception as error:

@@ -1,5 +1,7 @@
 import os
 import threading
+from src.application.architecture_manager.parent_connection import ParentConnection
+from src.application.architecture_manager.share_information import ShareInformation
 from src.application.use_cases.save_member import SaveMember
 
 from src.infrastructure.repositories.community_repository import CommunityRepository
@@ -26,10 +28,12 @@ from src.application.use_cases.create_idea import CreateIdea
 from src.application.use_cases.create_opinion import CreateOpinion
 from src.application.use_cases.save_idea import SaveIdea
 from src.application.use_cases.save_opinion import SaveOpinion
+from src.application.architecture_manager.architecture_manager import (
+    ArchitectureManager,
+)
+from src.infrastructure.services.community_service import CommunityService
 from src.presentation.formatting.message_formatter import MessageFormatter
 from src.presentation.handler.message_handler import MessageHandler
-from src.presentation.manager.architecture_manager import ArchitectureManager
-from src.presentation.manager.community_manager import CommunityManager
 from src.presentation.network.server import Server
 from src.presentation.views.menus.main_menu import MainMenu
 
@@ -66,12 +70,18 @@ class Application:
             self.file_service,
             self.datetime_service,
         )
-
-        self.community_manager = CommunityManager(
+        self.community_service = CommunityService(
             self.community_repository, self.member_repository, self.file_service
         )
-        self.architecture_manager = ArchitectureManager(
+
+        self.share_information_usecase = ShareInformation(
             self.member_repository, self.message_formatter, self.machine_service
+        )
+        self.parent_connection_usecase = ParentConnection(
+            self.member_repository, self.message_formatter, self.machine_service
+        )
+        self.architecture_manager = ArchitectureManager(
+            self.share_information_usecase, self.parent_connection_usecase
         )
 
         self.create_community_usecase = CreateCommunity(
@@ -97,7 +107,7 @@ class Application:
             self.member_repository,
             self.datetime_service,
             self.message_formatter,
-            self.community_manager,
+            self.community_service,
             self.architecture_manager,
         )
         self.join_community_usecase = JoinCommunity(
@@ -121,7 +131,7 @@ class Application:
             self.idea_repository,
             self.symetric_encryption_service,
             self.datetime_service,
-            self.community_manager,
+            self.community_service,
             self.architecture_manager,
         )
         self.create_opinion_usecase = CreateOpinion(
@@ -131,27 +141,27 @@ class Application:
             self.opinion_repository,
             self.symetric_encryption_service,
             self.datetime_service,
-            self.community_manager,
+            self.community_service,
             self.architecture_manager,
         )
         self.save_member_usecase = SaveMember(
             self.member_repository,
-            self.community_manager,
+            self.community_service,
             self.symetric_encryption_service,
         )
         self.save_idea_usecase = SaveIdea(
             self.idea_repository,
             self.symetric_encryption_service,
-            self.community_manager,
+            self.community_service,
         )
         self.save_opinion_usecase = SaveOpinion(
             self.opinion_repository,
             self.symetric_encryption_service,
-            self.community_manager,
+            self.community_service,
         )
 
         self.message_handler = MessageHandler(
-            self.community_manager,
+            self.community_service,
             self.architecture_manager,
             self.join_community_usecase,
             self.save_member_usecase,

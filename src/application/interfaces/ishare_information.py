@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
 
-from src.domain.entities.member import Member
 from src.presentation.formatting.message_dataclass import MessageDataclass
 
 
-class IArchitectureManager(ABC):
-    """Interface for the ArchitectureManager class."""
+class IShareInformation(ABC):
+    """Interface for share information."""
 
     @abstractmethod
-    def share_information(
+    def execute(
         self,
         message: MessageDataclass,
         community_id: str,
@@ -17,7 +16,3 @@ class IArchitectureManager(ABC):
     ):
         """Share a message to related members of architecture in a community
         (except the author and specified excluded)."""
-
-    @abstractmethod
-    def connect_to_parent(self, community_id: str) -> Member | None:
-        """Connect to a member as parent of the community."""

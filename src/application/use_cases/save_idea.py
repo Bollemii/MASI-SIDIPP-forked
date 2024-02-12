@@ -1,4 +1,4 @@
-from src.application.interfaces.icommunity_manager import ICommunityManager
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.application.interfaces.iidea_repository import IIdeaRepository
 from src.application.interfaces.isave_idea import ISaveIdea
 from src.application.interfaces.isymetric_encryption_service import (
@@ -14,17 +14,17 @@ class SaveIdea(ISaveIdea):
         self,
         idea_repository: IIdeaRepository,
         symetric_encryption_service: ISymetricEncryptionService,
-        community_manager: ICommunityManager,
+        community_service: ICommunityService,
     ):
         self.idea_repository = idea_repository
         self.symetric_encryption_service = symetric_encryption_service
-        self.community_manager = community_manager
+        self.community_service = community_service
 
     def execute(self, community_id: str, message: str) -> str:
         try:
             nonce, tag, cipher_idea = message.split(",", maxsplit=2)
 
-            symetric_key = self.community_manager.get_community_symetric_key(
+            symetric_key = self.community_service.get_community_symetric_key(
                 community_id
             )
             decrypted_idea = self.symetric_encryption_service.decrypt(
@@ -32,7 +32,7 @@ class SaveIdea(ISaveIdea):
             )
 
             idea = Idea.from_str(decrypted_idea)
-            if not self.community_manager.is_community_member(
+            if not self.community_service.is_community_member(
                 community_id, idea.author.authentication_key
             ):
                 raise ValueError("Author is not a member of the community.")

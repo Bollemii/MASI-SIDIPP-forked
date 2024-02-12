@@ -1,5 +1,5 @@
 from src.application.interfaces.iarchitecture_manager import IArchitectureManager
-from src.application.interfaces.icommunity_manager import ICommunityManager
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.domain.entities.member import Member
 from src.application.interfaces.idatetime_service import IDatetimeService
 from src.application.exceptions.authentification_failed_error import (
@@ -39,7 +39,7 @@ class AddMember(IAddMember):
         member_repository: IMemberRepository,
         datetime_service: IDatetimeService,
         message_formatter: IMessageFormatter,
-        community_manager: ICommunityManager,
+        community_service: ICommunityService,
         architecture_manager: IArchitectureManager,
     ):
         self.base_path = base_path
@@ -52,7 +52,7 @@ class AddMember(IAddMember):
         self.member_repository = member_repository
         self.datetime_service = datetime_service
         self.message_formatter = message_formatter
-        self.community_manager = community_manager
+        self.community_service = community_service
         self.architecture_manager = architecture_manager
 
         self.public_key: str
@@ -85,7 +85,7 @@ class AddMember(IAddMember):
             )
             self._add_member_to_community(community_id, member)
 
-            self.symetric_key = self.community_manager.get_community_symetric_key(
+            self.symetric_key = self.community_service.get_community_symetric_key(
                 community_id
             )
             self._send_community_symetric_key(client_socket)
@@ -215,6 +215,6 @@ class AddMember(IAddMember):
             f"{nonce},{tag},{cipher}",
             community_id,
         )
-        self.architecture_manager.share(
+        self.architecture_manager.share_information(
             message_dataclass, community_id, [member.authentication_key]
         )

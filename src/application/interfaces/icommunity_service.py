@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
 
-class ICommunityManager(ABC):
-    """Interface for Community Manager"""
+class ICommunityService(ABC):
+    """Interface for Community Service"""
 
     @abstractmethod
     def get_community_symetric_key(self, community_id: str) -> str:

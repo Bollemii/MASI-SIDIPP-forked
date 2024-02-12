@@ -6,11 +6,13 @@ from src.application.interfaces.imachine_service import IMachineService
 from src.application.interfaces.isymetric_encryption_service import (
     ISymetricEncryptionService,
 )
+from src.application.architecture_manager.architecture_manager import (
+    ArchitectureManager,
+)
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.domain.entities.idea import Idea
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
-from src.presentation.manager.architecture_manager import ArchitectureManager
-from src.presentation.manager.community_manager import CommunityManager
 
 
 class CreateIdea(ICreateIdea):
@@ -23,7 +25,7 @@ class CreateIdea(ICreateIdea):
         idea_repository: IIdeaRepository,
         symetric_encryption_service: ISymetricEncryptionService,
         datetime_service: IDatetimeService,
-        community_manager: CommunityManager,
+        community_service: ICommunityService,
         architecture_manager: ArchitectureManager,
     ):
         self.machine_service = machine_service
@@ -31,7 +33,7 @@ class CreateIdea(ICreateIdea):
         self.idea_repository = idea_repository
         self.symetric_encryption_service = symetric_encryption_service
         self.datetime_service = datetime_service
-        self.community_manager = community_manager
+        self.community_service = community_service
         self.architecture_manager = architecture_manager
 
     def execute(self, community_id: str, content: str) -> str:
@@ -42,7 +44,7 @@ class CreateIdea(ICreateIdea):
                     f"Content must be at least {Idea.CONTENT_MIN_LENGTH} characters long."
                 )
 
-            symetric_key = self.community_manager.get_community_symetric_key(
+            symetric_key = self.community_service.get_community_symetric_key(
                 community_id
             )
             author = self.machine_service.get_current_user(community_id)
@@ -63,7 +65,7 @@ class CreateIdea(ICreateIdea):
                 f"{nonce},{tag},{cipher}",
                 community_id,
             )
-            self.architecture_manager.share(message_dataclass, community_id)
+            self.architecture_manager.share_information(message_dataclass, community_id)
 
             return "Success!"
         except Exception as error:

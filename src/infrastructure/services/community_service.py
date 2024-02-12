@@ -1,10 +1,10 @@
-from src.application.interfaces.icommunity_manager import ICommunityManager
+from src.application.interfaces.icommunity_service import ICommunityService
 from src.application.interfaces.icommunity_repository import ICommunityRepository
 from src.application.interfaces.ifile_service import IFileService
 from src.application.interfaces.imember_repository import IMemberRepository
 
 
-class CommunityManager(ICommunityManager):
+class CommunityService(ICommunityService):
     """Manager for Community"""
 
     def __init__(

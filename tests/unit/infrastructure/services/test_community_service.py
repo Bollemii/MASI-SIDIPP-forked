@@ -2,11 +2,11 @@ from unittest import mock
 from unittest.mock import MagicMock
 import pytest
 
-from src.presentation.manager.community_manager import CommunityManager
+from src.infrastructure.services.community_service import CommunityService
 
 
-class TestCommunityManager:
-    """Test CommunityManager class"""
+class TestCommunityService:
+    """Test CommunityService class"""
 
     @pytest.fixture(scope="function", autouse=True, name="community_repository")
     @mock.patch(
@@ -36,37 +36,37 @@ class TestCommunityManager:
         """Create a FileService instance."""
         return mock_file_service
 
-    @pytest.fixture(scope="function", autouse=True, name="community_manager")
-    def create_community_manager(
+    @pytest.fixture(scope="function", autouse=True, name="community_service")
+    def create_community_service(
         self,
         community_repository: MagicMock,
         member_repository: MagicMock,
         file_service: MagicMock,
-    ) -> CommunityManager:
+    ) -> CommunityService:
         """Create a CommunityManager instance."""
-        return CommunityManager(community_repository, member_repository, file_service)
+        return CommunityService(community_repository, member_repository, file_service)
 
     def test_get_community_symetric_key(
         self,
-        community_manager: CommunityManager,
+        community_service: CommunityService,
         file_service: MagicMock,
     ):
         """Test method for get_community_symetric_key."""
         file_service.read_file.return_value = "symetric_key"
 
-        symetric_key = community_manager.get_community_symetric_key("community_id")
+        symetric_key = community_service.get_community_symetric_key("community_id")
 
         assert symetric_key == "symetric_key"
 
     def test_is_community_member_auth_key(
         self,
-        community_manager: CommunityManager,
+        community_service: CommunityService,
         member_repository: MagicMock,
     ):
         """Test method for is_community_member."""
         member_repository.get_member_for_community.return_value = "member"
 
-        is_member = community_manager.is_community_member(
+        is_member = community_service.is_community_member(
             "community_id", auth_key="auth_key"
         )
 
@@ -74,13 +74,13 @@ class TestCommunityManager:
 
     def test_is_not_community_member_auth_key(
         self,
-        community_manager: CommunityManager,
+        community_service: CommunityService,
         member_repository: MagicMock,
     ):
         """Test method for is_community_member."""
         member_repository.get_member_for_community.return_value = None
 
-        is_member = community_manager.is_community_member(
+        is_member = community_service.is_community_member(
             "community_id", auth_key="auth_key"
         )
 
@@ -88,13 +88,13 @@ class TestCommunityManager:
 
     def test_is_community_member_ip_address(
         self,
-        community_manager: CommunityManager,
+        community_service: CommunityService,
         member_repository: MagicMock,
     ):
         """Test method for is_community_member."""
         member_repository.get_member_for_community.return_value = "member"
 
-        is_member = community_manager.is_community_member(
+        is_member = community_service.is_community_member(
             "community_id", ip_address="ip_address"
         )
 
@@ -102,13 +102,13 @@ class TestCommunityManager:
 
     def test_is_not_community_member_ip_address(
         self,
-        community_manager: CommunityManager,
+        community_service: CommunityService,
         member_repository: MagicMock,
     ):
         """Test method for is_community_member."""
         member_repository.get_member_for_community.return_value = None
 
-        is_member = community_manager.is_community_member(
+        is_member = community_service.is_community_member(
             "community_id", ip_address="ip_address"
         )
 

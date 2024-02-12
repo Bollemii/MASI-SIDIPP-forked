@@ -13,7 +13,7 @@ class TestCreateIdea:
         "src.application.interfaces.iarchitecture_manager", name="architecture_manager"
     )
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="community_manager"
+        "src.application.interfaces.icommunity_service", name="community_service"
     )
     @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
@@ -37,7 +37,7 @@ class TestCreateIdea:
         idea_repo_mock: MagicMock,
         symetric_encryption_service_mock: MagicMock,
         datetime_service_mock: MagicMock,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         architecture_manager: MagicMock,
     ):
         """Create a usecase instance."""
@@ -53,7 +53,7 @@ class TestCreateIdea:
             idea_repo_mock,
             symetric_encryption_service_mock,
             datetime_service_mock,
-            community_manager,
+            community_service,
             architecture_manager,
         )
 
@@ -73,7 +73,7 @@ class TestCreateIdea:
 
         create_idea_usecase.execute("1", content)
 
-        create_idea_usecase.community_manager.get_community_symetric_key.assert_called()
+        create_idea_usecase.community_service.get_community_symetric_key.assert_called()
 
     def test_create_idea_encrypts_data(
         self,
@@ -120,7 +120,7 @@ class TestCreateIdea:
         """Creating an idea should call the architecture manager to share the message to the community."""
         create_idea_usecase.execute("1", "content")
 
-        create_idea_usecase.architecture_manager.share.assert_called_once()
+        create_idea_usecase.architecture_manager.share_information.assert_called_once()
 
     def test_create_idea_with_invalid_content(self, create_idea_usecase: CreateIdea):
         """Creating an idea with invalid content should return an error message."""

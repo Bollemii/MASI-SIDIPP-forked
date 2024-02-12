@@ -38,6 +38,32 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             """,
         )
 
+    def _build_members_list(self, result: list) -> list[Member]:
+        """Build a member list from result"""
+        members = []
+        for (
+            authentication_key,
+            ip_address,
+            port,
+            creation_date,
+            last_connection_date,
+        ) in result:
+            members.append(
+                Member(
+                    authentication_key,
+                    ip_address,
+                    port,
+                    datetime.fromisoformat(creation_date),
+                    (
+                        None
+                        if last_connection_date is None
+                        else datetime.fromisoformat(last_connection_date)
+                    ),
+                )
+            )
+
+        return members
+
     def add_member_to_community(
         self,
         community_id: str,
@@ -136,27 +162,12 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             parameters,
         )
 
-        if len(result) == 0:
+        members = self._build_members_list(result)
+
+        if len(members) == 0:
             return None
 
-        (
-            authentication_key,
-            ip_address,
-            port,
-            creation_date,
-            last_connection_date,
-        ) = result[0]
-        return Member(
-            authentication_key,
-            ip_address,
-            port,
-            datetime.fromisoformat(creation_date),
-            (
-                None
-                if last_connection_date is None
-                else datetime.fromisoformat(last_connection_date)
-            ),
-        )
+        return members[0]
 
     def get_members_from_community(
         self, community_id: str, is_related: bool = False
@@ -179,26 +190,25 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             statement,
         )
 
-        members = []
-        for (
+        return self._build_members_list(result)
+
+    def get_older_members_from_community(
+        self, community_id: str, date: datetime
+    ) -> list[Member]:
+        self.initialize_if_not_exists(community_id)
+
+        result = self._execute_query(
+            community_id,
+            """SELECT
             authentication_key,
             ip_address,
             port,
             creation_date,
-            last_connection_date,
-        ) in result:
-            members.append(
-                Member(
-                    authentication_key,
-                    ip_address,
-                    port,
-                    datetime.fromisoformat(creation_date),
-                    (
-                        None
-                        if last_connection_date is None
-                        else datetime.fromisoformat(last_connection_date)
-                    ),
-                )
-            )
+            last_connection_date
+            FROM nodes
+            WHERE creation_date < ?
+            ORDER BY creation_date ASC;""",
+            (date.isoformat(),),
+        )
 
-        return members
+        return self._build_members_list(result)

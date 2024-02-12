@@ -18,7 +18,7 @@ class TestAddMember:
         "src.application.interfaces.iarchitecture_manager", name="architecture_manager"
     )
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="community_manager"
+        "src.application.interfaces.icommunity_service", name="community_service"
     )
     @mock.patch(
         "src.application.interfaces.imessage_formatter", name="message_formatter"
@@ -54,7 +54,7 @@ class TestAddMember:
         member_repository: MagicMock,
         datetime_service: MagicMock,
         message_formatter: MagicMock,
-        community_manager: MagicMock,
+        community_service: MagicMock,
         architecture_manager: MagicMock,
     ) -> AddMember:
         """Create a use case for adding a member to a community."""
@@ -83,7 +83,7 @@ class TestAddMember:
         machine_service.get_auth_key.return_value = "auth_key"
         file_service.read_file.return_value = b"community_database"
         datetime_service.get_datetime.return_value = datetime(1970, 1, 1, 00, 00, 00)
-        community_manager.get_community_symetric_key.return_value = "symetric_key"
+        community_service.get_community_symetric_key.return_value = "symetric_key"
         return AddMember(
             "base_path",
             uuid_generator,
@@ -95,7 +95,7 @@ class TestAddMember:
             member_repository,
             datetime_service,
             message_formatter,
-            community_manager,
+            community_service,
             architecture_manager,
         )
 
@@ -349,7 +349,7 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", "127.0.0.1", 1234)
 
-        add_member_usecase.community_manager.get_community_symetric_key.assert_called_once()
+        add_member_usecase.community_service.get_community_symetric_key.assert_called_once()
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
     def test_encrypt_symetric_key(
@@ -709,4 +709,4 @@ class TestAddMember:
 
         add_member_usecase.execute("abc", ip_address, port)
 
-        add_member_usecase.architecture_manager.share.assert_called_once()
+        add_member_usecase.architecture_manager.share_information.assert_called_once()

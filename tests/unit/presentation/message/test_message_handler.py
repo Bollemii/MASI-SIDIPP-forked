@@ -13,7 +13,7 @@ class TestMessageHandler:
 
     @pytest.fixture(scope="function", autouse=True, name="message_handler")
     @mock.patch(
-        "src.application.interfaces.icommunity_manager", name="mock_community_manager"
+        "src.application.interfaces.icommunity_service", name="mock_community_service"
     )
     @mock.patch(
         "src.application.interfaces.iarchitecture_manager",
@@ -32,12 +32,12 @@ class TestMessageHandler:
         mock_save_idea: MagicMock,
         mock_save_member: MagicMock,
         mock_architecture_manager: MagicMock,
-        mock_community_manager: MagicMock,
+        mock_community_service: MagicMock,
     ) -> MessageHandler:
         """Fixture to create a MessageHandler instance."""
-        mock_community_manager.is_community_member.return_value = True
+        mock_community_service.is_community_member.return_value = True
         return MessageHandler(
-            mock_community_manager,
+            mock_community_service,
             mock_architecture_manager,
             join_community_usecase,
             mock_save_member,
@@ -77,7 +77,7 @@ class TestMessageHandler:
         message = MessageDataclass(MessageHeader.CREATE_IDEA, "content")
         sender = ("127.0.0.1", 1024)
 
-        message_handler.community_manager.is_community_member.return_value = False
+        message_handler.community_service.is_community_member.return_value = False
 
         with pytest.raises(MessageError):
             message_handler.handle_message(sender, mock_client, message)
@@ -114,3 +114,16 @@ class TestMessageHandler:
         message_handler.handle_message(sender, mock_client, message)
 
         message_handler.save_member_usecase.execute.assert_called_once()
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_receive_ping(
+        self, mock_client: MagicMock, message_handler: MessageHandler
+    ):
+        """Test method for handle ping message"""
+        message = MessageDataclass(MessageHeader.PING)
+        sender = ("127.0.0.1", 1024)
+        message_handler.handle_message(sender, mock_client, message)
+
+        mock_client.send_message.assert_called_once_with(
+            MessageDataclass(MessageHeader.PONG)
+        )

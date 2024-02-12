@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Literal
 
 from src.domain.entities.member import Member
@@ -50,3 +51,9 @@ class IMemberRepository(ABC):
         self, community_id: str, is_related: bool = False
     ) -> list[Member]:
         """Get all members of a specific community"""
+
+    @abstractmethod
+    def get_older_members_from_community(
+        self, community_id: str, date: datetime
+    ) -> list[Member]:
+        """Get all members who are older than specified date"""

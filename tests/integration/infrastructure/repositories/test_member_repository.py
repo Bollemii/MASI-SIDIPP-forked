@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import pytest
 
@@ -250,3 +251,61 @@ class TestMemberRepository:
         repository.update_member_relationship(
             community_id, member.authentication_key, "child"
         )
+
+    def test_get_older_members(self, temp_folder):
+        """Validates that it is possible to get older members"""
+        members = [
+            Member("abc", "127.0.0.1", 0, datetime(1970, 1, 1)),
+            Member("abc2", "127.0.0.2", 0, datetime(1999, 1, 1)),
+            Member("abc3", "127.0.0.3", 0, datetime(2023, 1, 1)),
+        ]
+
+        community_id = "1234"
+        dt = datetime(2000, 1, 1)
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        actual_members = repository.get_older_members_from_community(community_id, dt)
+
+        assert len(actual_members) == 2
+
+    def test_get_older_members_than(self, temp_folder):
+        """Validates that it is possible to get older members"""
+        members = [
+            Member("abc", "127.0.0.1", 0, datetime(1970, 1, 1)),
+            Member("abc2", "127.0.0.2", 0, datetime(1999, 1, 1)),
+            Member("abc3", "127.0.0.3", 0, datetime(2023, 1, 1)),
+        ]
+
+        community_id = "1234"
+        dt = datetime(2000, 1, 1)
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        actual_members = repository.get_older_members_from_community(community_id, dt)
+
+        for member in actual_members:
+            assert member.creation_date < dt
+
+    def test_get_older_members_ordered(self, temp_folder):
+        """Validates that it is possible to get older members"""
+        members = [
+            Member("abc", "127.0.0.1", 0, datetime(1970, 1, 1)),
+            Member("abc2", "127.0.0.2", 0, datetime(1999, 1, 1)),
+            Member("abc3", "127.0.0.3", 0, datetime(2023, 1, 1)),
+        ]
+
+        community_id = "1234"
+        dt = datetime(2000, 1, 1)
+        repository = MemberRepository(temp_folder)
+        for member in members:
+            repository.add_member_to_community(community_id, member)
+
+        actual_members = repository.get_older_members_from_community(community_id, dt)
+
+        for i in range(1, len(actual_members)):
+            assert (
+                actual_members[i].creation_date >= actual_members[i - 1].creation_date
+            )
