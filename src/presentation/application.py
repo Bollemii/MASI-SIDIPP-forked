@@ -211,8 +211,11 @@ class Application:
     def stop(self):
         """Stops the application."""
         if not self.stopped:
-            self.stopped = True
+            self.architecture_manager.deconnection()
+
             self.server_socket.stop()
             for thread in self.threads:
                 if thread.is_alive():
                     thread.join()
+
+            self.stopped = True
