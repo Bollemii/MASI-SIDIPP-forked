@@ -11,19 +11,25 @@ class TestDeconnection:
 
     @pytest.fixture(scope="function", autouse=True, name="deconnection")
     @mock.patch(
+        "src.application.interfaces.iparent_connection", name="parent_connection"
+    )
+    @mock.patch(
         "src.application.interfaces.ishare_information", name="share_information"
     )
     @mock.patch(
         "src.application.interfaces.imember_repository", name="member_repository"
     )
+    @mock.patch("src.application.interfaces.imachine_service", name="machine_service")
     @mock.patch(
         "src.application.interfaces.icommunity_repository", name="community_repository"
     )
     def create_deconnection(
         self,
         community_repository: MagicMock,
+        machine_service: MagicMock,
         member_repository: MagicMock,
         share_information: MagicMock,
+        parent_connection: MagicMock,
     ) -> Deconnection:
         """Create a deconnection instance"""
         community_repository.get_communities.return_value = [
@@ -31,8 +37,10 @@ class TestDeconnection:
         ]
         return Deconnection(
             community_repository,
+            machine_service,
             member_repository,
             share_information,
+            parent_connection,
         )
 
     def test_deconnection_get_communities_list(self, deconnection: Deconnection):

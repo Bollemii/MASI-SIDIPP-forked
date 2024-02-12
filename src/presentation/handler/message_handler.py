@@ -48,9 +48,12 @@ class MessageHandler(IMessageHandler):
                 self.save_idea_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_OPINION:
                 self.save_opinion_usecase.execute(message.community_id, message.content)
-            case MessageHeader.PING:
-                client.send_message(MessageDataclass(MessageHeader.PONG))
-                client.close_connection()
+            case MessageHeader.REQUEST_PARENT:
+                self.architecture_manager.response_parent_request(
+                    client, message.community_id, message.content
+                )
+            case MessageHeader.DECONNECTION:
+                pass
             case _:
                 raise MessageError("Invalid header in the message.")
 

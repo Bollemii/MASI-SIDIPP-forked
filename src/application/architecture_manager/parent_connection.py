@@ -42,6 +42,9 @@ class ParentConnection(IParentConnection):
 
                 received_message, _ = client_socket.receive_message()
                 if received_message and received_message.header == MessageHeader.ACCEPT:
+                    self.member_repository.update_member_relationship(
+                        community_id, member.authentication_key, "parent"
+                    )
                     parent_found = member
                     break
             except:
@@ -51,3 +54,14 @@ class ParentConnection(IParentConnection):
                     client_socket.close_connection()
 
         return parent_found
+
+    def response(self, client: client.Client, community_id: str, auth_key: str):
+        try:
+            self.member_repository.update_member_relationship(
+                community_id, auth_key, "child"
+            )
+            client.send_message(MessageDataclass(MessageHeader.ACCEPT))
+        except:
+            pass
+        finally:
+            client.close_connection()

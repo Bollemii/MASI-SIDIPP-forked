@@ -4,6 +4,7 @@ from src.domain.entities.member import Member
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.application.interfaces.ishare_information import IShareInformation
 from src.application.architecture_manager.parent_connection import ParentConnection
+from src.presentation.network.client import Client
 
 
 class ArchitectureManager(IArchitectureManager):
@@ -33,5 +34,11 @@ class ArchitectureManager(IArchitectureManager):
     def connect_to_parent(self, community_id: str) -> Member | None:
         return self.parent_connection_usecase.execute(community_id)
 
+    def response_parent_request(self, client: Client, community_id: str, auth_key: str):
+        self.parent_connection_usecase.response(client, community_id, auth_key)
+
     def deconnection(self):
         self.deconnection_usecase.execute()
+
+    def deconnect_member(self, community_id: str, auth_key: str):
+        self.deconnection_usecase.deconnect_member(community_id, auth_key)
