@@ -53,7 +53,9 @@ class MessageHandler(IMessageHandler):
                     client, message.community_id, message.content
                 )
             case MessageHeader.DECONNECTION:
-                pass
+                self.architecture_manager.deconnect_member(
+                    message.community_id, message.content
+                )
             case _:
                 raise MessageError("Invalid header in the message.")
 

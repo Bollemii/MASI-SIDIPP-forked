@@ -50,8 +50,27 @@ class TestArchitectureManager:
 
         architecture_manager.parent_connection_usecase.execute.assert_called_once()
 
+    def test_response_parent_request(self, architecture_manager: ArchitectureManager):
+        """Test response_parent_request call response method of ParentConnection"""
+        client = MagicMock()
+        community_id = "community_id"
+        auth_key = "auth_key"
+
+        architecture_manager.response_parent_request(client, community_id, auth_key)
+
+        architecture_manager.parent_connection_usecase.response.assert_called_once()
+
     def test_deconnection(self, architecture_manager: ArchitectureManager):
         """Test deconnection call execute method of Deconnection"""
         architecture_manager.deconnection()
 
         architecture_manager.deconnection_usecase.execute.assert_called_once()
+
+    def test_deconnect_member(self, architecture_manager: ArchitectureManager):
+        """Test deconnect_member call deconnect_member method of Deconnection"""
+        community_id = "community_id"
+        auth_key = "auth_key"
+
+        architecture_manager.deconnect_member(community_id, auth_key)
+
+        architecture_manager.deconnection_usecase.deconnect_member.assert_called_once()

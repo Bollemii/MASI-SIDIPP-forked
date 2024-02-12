@@ -83,8 +83,10 @@ class Application:
         )
         self.deconnection_usecase = Deconnection(
             self.community_repository,
+            self.machine_service,
             self.member_repository,
             self.share_information_usecase,
+            self.parent_connection_usecase,
         )
         self.architecture_manager = ArchitectureManager(
             self.share_information_usecase,
