@@ -1,6 +1,7 @@
 from unittest import mock
 from unittest.mock import MagicMock
 import pytest
+from src.domain.entities.member import Member
 
 from src.infrastructure.services.machine_service import MachineService
 
@@ -20,17 +21,21 @@ class TestMachineService:
     @mock.patch(
         "src.application.interfaces.idatetime_service", name="datetime_service_mock"
     )
-    @mock.patch(
-        "src.application.interfaces.icommunity_repository", name="community_repository"
-    )
-    @mock.patch("src.application.interfaces.iid_generator_service", name="id_generator")
+    @mock.patch("src.application.interfaces.ifile_service", name="file_service")
     @mock.patch(
         "src.application.interfaces.iasymetric_encryption_service", name="encryption"
     )
-    @mock.patch("src.application.interfaces.ifile_service", name="file_service")
+    @mock.patch("src.application.interfaces.iid_generator_service", name="id_generator")
+    @mock.patch(
+        "src.application.interfaces.imember_repository", name="member_repository"
+    )
+    @mock.patch(
+        "src.application.interfaces.icommunity_repository", name="community_repository"
+    )
     def fixture_machine_service(
         self,
         community_repository: MagicMock,
+        member_repository: MagicMock,
         id_generator: MagicMock,
         encryption: MagicMock,
         file_service: MagicMock,
@@ -41,6 +46,7 @@ class TestMachineService:
         return MachineService(
             temp_folder,
             community_repository,
+            member_repository,
             id_generator,
             encryption,
             file_service,
@@ -219,7 +225,6 @@ class TestMachineService:
 
         assert user is not None
 
-    @pytest.mark.parametrize("community_id", ["1234", None])
     @mock.patch(
         "src.infrastructure.services.machine_service",
         name="get_auth_key_mock",
@@ -229,16 +234,16 @@ class TestMachineService:
         self,
         get_auth_key_mock: MagicMock,
         machine_service: MachineService,
-        community_id: str | None,
     ):
         """Test getting the current user."""
+        member = Member("auth_key", "ip_address", 1234)
+        machine_service.member_repository.get_member_for_community.return_value = member
         machine_service.get_auth_key = get_auth_key_mock
 
-        user = machine_service.get_current_user(community_id)
+        user = machine_service.get_current_user()
 
         assert user.authentication_key == get_auth_key_mock.return_value
 
-    @pytest.mark.parametrize("community_id", ["1234", None])
     @mock.patch(
         "src.infrastructure.services.machine_service",
         name="get_ip_address_mock",
@@ -248,16 +253,14 @@ class TestMachineService:
         self,
         get_ip_address_mock: MagicMock,
         machine_service: MachineService,
-        community_id: str | None,
     ):
         """Test getting the current user."""
         machine_service.get_ip_address = get_ip_address_mock
 
-        user = machine_service.get_current_user(community_id)
+        user = machine_service.get_current_user()
 
         assert user.ip_address == get_ip_address_mock.return_value
 
-    @pytest.mark.parametrize("community_id", ["1234", None])
     @mock.patch(
         "src.infrastructure.services.machine_service",
         name="get_port_mock",
@@ -267,12 +270,11 @@ class TestMachineService:
         self,
         get_port_mock: MagicMock,
         machine_service: MachineService,
-        community_id: str | None,
     ):
         """Test getting the current user."""
         machine_service.get_port = get_port_mock
 
-        user = machine_service.get_current_user(community_id)
+        user = machine_service.get_current_user()
 
         assert user.port == get_port_mock.return_value
 
@@ -283,3 +285,22 @@ class TestMachineService:
         machine_service.get_current_user(None)
 
         machine_service.datetime_service.get_datetime.assert_called_once()
+
+    def test_get_current_user_calls_member_repository(
+        self, machine_service: MachineService
+    ):
+        """Test getting the current user."""
+        machine_service.get_current_user("community_id")
+
+        machine_service.member_repository.get_member_for_community.assert_called_once()
+
+    def test_get_current_user_call_returns_member(
+        self, machine_service: MachineService
+    ):
+        """Test getting the current user."""
+        member = Member("auth_key", "ip_address", 1234)
+        machine_service.member_repository.get_member_for_community.return_value = member
+
+        user = machine_service.get_current_user("community_id")
+
+        assert user == member

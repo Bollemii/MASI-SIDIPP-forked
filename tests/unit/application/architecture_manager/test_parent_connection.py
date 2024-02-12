@@ -57,10 +57,10 @@ class TestParentConnection:
         assert parent in members
 
     @mock.patch("src.presentation.network.client.Client", name="mock_client")
-    def test_search_parent_not_receive_pong(
+    def test_search_parent_not_receive_accept(
         self, mock_client: MagicMock, parent_connection: ParentConnection
     ):
-        """Test search parent method if not receive pong message"""
+        """Test search parent method if not receive accept message"""
         mock_client.return_value = mock_client
         members = [
             Member("abc", "127.0.0.1", 0),
@@ -136,3 +136,65 @@ class TestParentConnection:
 
         message = MessageDataclass(MessageHeader.REQUEST_PARENT, "abc", "community_id")
         mock_client.send_message.assert_any_call(message)
+
+    @mock.patch("src.presentation.network.client.Client", name="mock_client")
+    def test_search_parent_update_relationship(
+        self, mock_client: MagicMock, parent_connection: ParentConnection
+    ):
+        """Test search parent method should update relationship"""
+        mock_client.return_value = mock_client
+        members = [
+            Member("abc", "127.0.0.1", 0),
+            Member("abc2", "127.0.0.2", 0),
+            Member("abc3", "127.0.0.3", 0),
+        ]
+        parent_connection.machine_service.get_current_user.return_value = Member(
+            "abc", "127.0.0.0", 0
+        )
+        parent_connection.member_repository.get_older_members_from_community.return_value = (
+            members
+        )
+        mock_client.connect_to_server.side_effect = [Exception(), None]
+        mock_client.receive_message.return_value = (
+            MessageDataclass(MessageHeader.ACCEPT),
+            None,
+        )
+
+        community_id = "community_id"
+        parent_connection.execute(community_id)
+
+        parent_connection.member_repository.update_member_relationship.assert_called_once()
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="client")
+    def test_response_update_relationship(
+        self, client: MagicMock, parent_connection: ParentConnection
+    ):
+        """Test response method should update relationship"""
+        result = parent_connection.response(client, "community_id", "content")
+
+        parent_connection.member_repository.update_member_relationship.assert_called_once()
+        assert result == "Success!"
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="client")
+    def test_response_send_accept_message(
+        self, client: MagicMock, parent_connection: ParentConnection
+    ):
+        """Test response method should update relationship"""
+        parent_connection.response(client, "community_id", "content")
+
+        message = MessageDataclass(MessageHeader.ACCEPT)
+        client.send_message.assert_called_once_with(message)
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="client")
+    def test_response_failed_send_reject_message(
+        self, client: MagicMock, parent_connection: ParentConnection
+    ):
+        """Test response method should update relationship"""
+        parent_connection.member_repository.update_member_relationship.side_effect = (
+            Exception()
+        )
+        result = parent_connection.response(client, "community_id", "content")
+
+        message = MessageDataclass(MessageHeader.REJECT)
+        client.send_message.assert_any_call(message)
+        assert result != "Success!"

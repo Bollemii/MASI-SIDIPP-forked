@@ -21,11 +21,19 @@ class ParentConnection(IParentConnection):
         self.message_formatter = message_formatter
         self.machine_service = machine_service
 
-    def execute(self, community_id: str) -> Member | None:
+    def execute(
+        self, community_id: str, old_parent_auth_key: str | None = None
+    ) -> Member | None:
         author = self.machine_service.get_current_user(community_id)
         members = self.member_repository.get_older_members_from_community(
             community_id, author.creation_date
         )
+        members = list(
+            filter(
+                lambda member: member.authentication_key != old_parent_auth_key, members
+            )
+        )
+
         message = MessageDataclass(
             MessageHeader.REQUEST_PARENT,
             author.authentication_key,
@@ -42,6 +50,9 @@ class ParentConnection(IParentConnection):
 
                 received_message, _ = client_socket.receive_message()
                 if received_message and received_message.header == MessageHeader.ACCEPT:
+                    self.member_repository.update_member_relationship(
+                        community_id, member.authentication_key, "parent"
+                    )
                     parent_found = member
                     break
             except:
@@ -51,3 +62,16 @@ class ParentConnection(IParentConnection):
                     client_socket.close_connection()
 
         return parent_found
+
+    def response(self, client: client.Client, community_id: str, auth_key: str) -> str:
+        try:
+            self.member_repository.update_member_relationship(
+                community_id, auth_key, "child"
+            )
+            client.send_message(MessageDataclass(MessageHeader.ACCEPT))
+            return "Success!"
+        except Exception as error:
+            client.send_message(MessageDataclass(MessageHeader.REJECT))
+            return str(error)
+        finally:
+            client.close_connection()

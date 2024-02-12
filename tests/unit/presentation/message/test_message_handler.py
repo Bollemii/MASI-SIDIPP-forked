@@ -116,14 +116,27 @@ class TestMessageHandler:
         message_handler.save_member_usecase.execute.assert_called_once()
 
     @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
-    def test_receive_ping(
+    def test_receive_accept(
         self, mock_client: MagicMock, message_handler: MessageHandler
     ):
         """Test method for handle ping message"""
-        message = MessageDataclass(MessageHeader.PING)
+        message = MessageDataclass(
+            MessageHeader.REQUEST_PARENT, "content", "community_id"
+        )
         sender = ("127.0.0.1", 1024)
         message_handler.handle_message(sender, mock_client, message)
 
-        mock_client.send_message.assert_called_once_with(
-            MessageDataclass(MessageHeader.PONG)
+        message_handler.architecture_manager.response_parent_request.assert_called_once()
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="mock_client")
+    def test_receive_deconnection(
+        self, mock_client: MagicMock, message_handler: MessageHandler
+    ):
+        """Test method for handle ping message"""
+        message = MessageDataclass(
+            MessageHeader.DECONNECTION, "content", "community_id"
         )
+        sender = ("127.0.0.1", 1024)
+        message_handler.handle_message(sender, mock_client, message)
+
+        message_handler.architecture_manager.deconnect_member.assert_called_once()

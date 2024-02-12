@@ -1,5 +1,6 @@
 import os
 import threading
+from src.application.architecture_manager.deconnection import Deconnection
 from src.application.architecture_manager.parent_connection import ParentConnection
 from src.application.architecture_manager.share_information import ShareInformation
 from src.application.use_cases.save_member import SaveMember
@@ -65,6 +66,7 @@ class Application:
         self.machine_service = MachineService(
             base_path,
             self.community_repository,
+            self.member_repository,
             self.id_generator,
             self.asymetric_encryption_service,
             self.file_service,
@@ -80,8 +82,17 @@ class Application:
         self.parent_connection_usecase = ParentConnection(
             self.member_repository, self.message_formatter, self.machine_service
         )
+        self.deconnection_usecase = Deconnection(
+            self.community_repository,
+            self.machine_service,
+            self.member_repository,
+            self.share_information_usecase,
+            self.parent_connection_usecase,
+        )
         self.architecture_manager = ArchitectureManager(
-            self.share_information_usecase, self.parent_connection_usecase
+            self.share_information_usecase,
+            self.parent_connection_usecase,
+            self.deconnection_usecase,
         )
 
         self.create_community_usecase = CreateCommunity(
@@ -201,8 +212,11 @@ class Application:
     def stop(self):
         """Stops the application."""
         if not self.stopped:
-            self.stopped = True
+            self.architecture_manager.deconnection()
+
             self.server_socket.stop()
             for thread in self.threads:
                 if thread.is_alive():
                     thread.join()
+
+            self.stopped = True

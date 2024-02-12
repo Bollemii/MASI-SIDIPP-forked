@@ -47,6 +47,7 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             port,
             creation_date,
             last_connection_date,
+            relationship_id,
         ) in result:
             members.append(
                 Member(
@@ -59,6 +60,7 @@ class MemberRepository(IMemberRepository, SqliteRepository):
                         if last_connection_date is None
                         else datetime.fromisoformat(last_connection_date)
                     ),
+                    relationship_id,
                 )
             )
 
@@ -155,7 +157,8 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             ip_address,
             port,
             creation_date,
-            last_connection_date
+            last_connection_date,
+            relationship_id
             FROM nodes """
             + condition
             + ";",
@@ -180,7 +183,8 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             ip_address,
             port,
             creation_date,
-            last_connection_date
+            last_connection_date,
+            relationship_id
             FROM nodes""" + (
             " WHERE relationship_id IS NOT NULL;" if is_related else ";"
         )
@@ -204,7 +208,8 @@ class MemberRepository(IMemberRepository, SqliteRepository):
             ip_address,
             port,
             creation_date,
-            last_connection_date
+            last_connection_date,
+            relationship_id
             FROM nodes
             WHERE creation_date < ?
             ORDER BY creation_date ASC;""",

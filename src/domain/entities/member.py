@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 
 class Member:
@@ -11,12 +12,14 @@ class Member:
         port: int,
         creation_date=datetime.now(),
         last_connection_date: datetime | None = None,
+        relationship: Literal["parent", "child"] | None = None,
     ):
         self.authentication_key = authentication_key
         self.ip_address = ip_address
         self.port = port
         self.creation_date = creation_date
         self.last_connection_date = last_connection_date
+        self.relationship = relationship
 
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Member):

@@ -33,7 +33,14 @@ class MessageHandler(IMessageHandler):
     def handle_message(
         self, sender: tuple[str, int], client: Client, message: MessageDataclass
     ):
-        if message.header != MessageHeader.INVITATION:
+        headers_check_community = [
+            MessageHeader.ADD_MEMBER,
+            MessageHeader.CREATE_IDEA,
+            MessageHeader.CREATE_OPINION,
+            MessageHeader.REQUEST_PARENT,
+            MessageHeader.DECONNECTION,
+        ]
+        if message.header in headers_check_community:
             if not self.community_service.is_community_member(
                 message.community_id, ip_address=sender[0]
             ):
@@ -48,13 +55,23 @@ class MessageHandler(IMessageHandler):
                 self.save_idea_usecase.execute(message.community_id, message.content)
             case MessageHeader.CREATE_OPINION:
                 self.save_opinion_usecase.execute(message.community_id, message.content)
-            case MessageHeader.PING:
-                client.send_message(MessageDataclass(MessageHeader.PONG))
-                client.close_connection()
+            case MessageHeader.REQUEST_PARENT:
+                self.architecture_manager.response_parent_request(
+                    client, message.community_id, message.content
+                )
+            case MessageHeader.DECONNECTION:
+                self.architecture_manager.deconnect_member(
+                    message.community_id, message.content
+                )
             case _:
                 raise MessageError("Invalid header in the message.")
 
-        if message.header != MessageHeader.INVITATION:
+        header_to_share = [
+            MessageHeader.ADD_MEMBER,
+            MessageHeader.CREATE_IDEA,
+            MessageHeader.CREATE_OPINION,
+        ]
+        if message.header in header_to_share:
             self.architecture_manager.share_information(
                 message, message.community_id, excluded_ip_addresses=[sender[0]]
             )

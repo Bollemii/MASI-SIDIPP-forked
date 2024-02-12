@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from src.domain.entities.member import Member
 from src.presentation.formatting.message_dataclass import MessageDataclass
+from src.presentation.network.client import Client
 
 
 class IArchitectureManager(ABC):
@@ -21,3 +22,15 @@ class IArchitectureManager(ABC):
     @abstractmethod
     def connect_to_parent(self, community_id: str) -> Member | None:
         """Connect to a member as parent of the community."""
+
+    @abstractmethod
+    def response_parent_request(self, client: Client, community_id: str, auth_key: str):
+        """Respond to a parent request"""
+
+    @abstractmethod
+    def deconnection(self):
+        """Deconnect of all communities"""
+
+    @abstractmethod
+    def deconnect_member(self, community_id: str, auth_key: str):
+        """Deconnect a member from a community"""
