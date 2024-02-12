@@ -60,3 +60,31 @@ class TestDeconnection:
         deconnection.execute()
 
         deconnection.member_repository.clear_members_relationship.assert_called()
+
+    def test_deconnection_deconnect_member(self, deconnection: Deconnection):
+        """Test that the method deconnect member should update the member relationship"""
+        deconnection.deconnect_member("abc", "auth_key")
+
+        deconnection.member_repository.update_member_relationship.assert_called()
+
+    def test_deconnection_deconnect_member_parent(self, deconnection: Deconnection):
+        """Test that the method deconnect member
+        should connect to parent if the member is a parent"""
+        deconnection.member_repository.get_member_for_community.return_value.relationship = (
+            "parent"
+        )
+
+        deconnection.deconnect_member("abc", "auth_key")
+
+        deconnection.parent_connection.execute.assert_called()
+
+    def test_deconnection_deconnect_member_child(self, deconnection: Deconnection):
+        """Test that the method deconnect member does
+        not connect to parent if the member is a child"""
+        deconnection.member_repository.get_member_for_community.return_value.relationship = (
+            "child"
+        )
+
+        deconnection.deconnect_member("abc", "auth_key")
+
+        deconnection.parent_connection.execute.assert_not_called()

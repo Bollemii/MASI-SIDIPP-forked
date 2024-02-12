@@ -55,13 +55,15 @@ class ParentConnection(IParentConnection):
 
         return parent_found
 
-    def response(self, client: client.Client, community_id: str, auth_key: str):
+    def response(self, client: client.Client, community_id: str, auth_key: str) -> str:
         try:
             self.member_repository.update_member_relationship(
                 community_id, auth_key, "child"
             )
             client.send_message(MessageDataclass(MessageHeader.ACCEPT))
-        except:
-            pass
+            return "Success!"
+        except Exception as error:
+            client.send_message(MessageDataclass(MessageHeader.REJECT))
+            return str(error)
         finally:
             client.close_connection()

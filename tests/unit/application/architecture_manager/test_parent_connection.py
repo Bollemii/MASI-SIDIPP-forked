@@ -170,9 +170,10 @@ class TestParentConnection:
         self, client: MagicMock, parent_connection: ParentConnection
     ):
         """Test response method should update relationship"""
-        parent_connection.response(client, "community_id", "content")
+        result = parent_connection.response(client, "community_id", "content")
 
         parent_connection.member_repository.update_member_relationship.assert_called_once()
+        assert result == "Success!"
 
     @mock.patch("src.application.interfaces.iclient_socket", name="client")
     def test_response_send_accept_message(
@@ -183,3 +184,17 @@ class TestParentConnection:
 
         message = MessageDataclass(MessageHeader.ACCEPT)
         client.send_message.assert_called_once_with(message)
+
+    @mock.patch("src.application.interfaces.iclient_socket", name="client")
+    def test_response_failed_send_reject_message(
+        self, client: MagicMock, parent_connection: ParentConnection
+    ):
+        """Test response method should update relationship"""
+        parent_connection.member_repository.update_member_relationship.side_effect = (
+            Exception()
+        )
+        result = parent_connection.response(client, "community_id", "content")
+
+        message = MessageDataclass(MessageHeader.REJECT)
+        client.send_message.assert_any_call(message)
+        assert result != "Success!"
