@@ -8,6 +8,7 @@ from src.application.interfaces.iasymetric_encryption_service import (
     IAsymetricEncryptionService,
 )
 from src.application.interfaces.ifile_service import IFileService
+from src.application.interfaces.imember_repository import IMemberRepository
 from src.domain.entities.member import Member
 
 
@@ -18,6 +19,7 @@ class MachineService(IMachineService):
         self,
         base_path: str,
         community_repository: ICommunityRepository,
+        member_repository: IMemberRepository,
         id_generator_service: IIdGeneratorService,
         encryption_service: IAsymetricEncryptionService,
         file_service: IFileService,
@@ -25,6 +27,7 @@ class MachineService(IMachineService):
     ):
         self.base_path = base_path
         self.community_repository = community_repository
+        self.member_repository = member_repository
         self.id_generator_service = id_generator_service
         self.encryption_service = encryption_service
         self.file_service = file_service
@@ -66,9 +69,14 @@ class MachineService(IMachineService):
         return 1664
 
     def get_current_user(self, community_id: str | None = None) -> Member:
-        return Member(
-            self.get_auth_key(community_id),
-            self.get_ip_address(),
-            self.get_port(),
-            self.datetime_service.get_datetime(),
-        )
+        if community_id is None:
+            return Member(
+                self.get_auth_key(),
+                self.get_ip_address(),
+                self.get_port(),
+                self.datetime_service.get_datetime(),
+            )
+        else:
+            return self.member_repository.get_member_for_community(
+                community_id, self.get_auth_key(community_id)
+            )

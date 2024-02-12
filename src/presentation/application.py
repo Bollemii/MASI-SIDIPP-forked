@@ -66,6 +66,7 @@ class Application:
         self.machine_service = MachineService(
             base_path,
             self.community_repository,
+            self.member_repository,
             self.id_generator,
             self.asymetric_encryption_service,
             self.file_service,

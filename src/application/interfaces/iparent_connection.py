@@ -8,7 +8,9 @@ class IParentConnection(ABC):
     """Interface for the ParentConnection class."""
 
     @abstractmethod
-    def execute(self, community_id: str) -> Member | None:
+    def execute(
+        self, community_id: str, old_parent_auth_key: str | None = None
+    ) -> Member | None:
         """Connect to a member as parent of the community."""
 
     @abstractmethod

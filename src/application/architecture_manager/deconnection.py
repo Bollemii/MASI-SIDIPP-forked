@@ -1,8 +1,8 @@
-from src.application.architecture_manager.parent_connection import ParentConnection
 from src.application.interfaces.icommunity_repository import ICommunityRepository
 from src.application.interfaces.ideconnection import IDeconnection
 from src.application.interfaces.imachine_service import IMachineService
 from src.application.interfaces.imember_repository import IMemberRepository
+from src.application.interfaces.iparent_connection import IParentConnection
 from src.application.interfaces.ishare_information import IShareInformation
 from src.presentation.formatting.message_dataclass import MessageDataclass
 from src.presentation.formatting.message_header import MessageHeader
@@ -17,7 +17,7 @@ class Deconnection(IDeconnection):
         machine_service: IMachineService,
         member_repository: IMemberRepository,
         share_information: IShareInformation,
-        parent_connection: ParentConnection,
+        parent_connection: IParentConnection,
     ):
         self.community_repository = community_repository
         self.machine_service = machine_service
@@ -46,4 +46,4 @@ class Deconnection(IDeconnection):
             community_id, auth_key, relationship=None
         )
         if member.relationship == "parent":
-            self.parent_connection.execute(community_id)
+            self.parent_connection.execute(community_id, auth_key)

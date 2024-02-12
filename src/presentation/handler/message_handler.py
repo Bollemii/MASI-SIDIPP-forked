@@ -33,7 +33,14 @@ class MessageHandler(IMessageHandler):
     def handle_message(
         self, sender: tuple[str, int], client: Client, message: MessageDataclass
     ):
-        if message.header != MessageHeader.INVITATION:
+        headers_check_community = [
+            MessageHeader.ADD_MEMBER,
+            MessageHeader.CREATE_IDEA,
+            MessageHeader.CREATE_OPINION,
+            MessageHeader.REQUEST_PARENT,
+            MessageHeader.DECONNECTION,
+        ]
+        if message.header in headers_check_community:
             if not self.community_service.is_community_member(
                 message.community_id, ip_address=sender[0]
             ):
@@ -59,7 +66,12 @@ class MessageHandler(IMessageHandler):
             case _:
                 raise MessageError("Invalid header in the message.")
 
-        if message.header != MessageHeader.INVITATION:
+        header_to_share = [
+            MessageHeader.ADD_MEMBER,
+            MessageHeader.CREATE_IDEA,
+            MessageHeader.CREATE_OPINION,
+        ]
+        if message.header in header_to_share:
             self.architecture_manager.share_information(
                 message, message.community_id, excluded_ip_addresses=[sender[0]]
             )

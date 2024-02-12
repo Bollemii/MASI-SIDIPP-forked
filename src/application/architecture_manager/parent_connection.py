@@ -21,11 +21,19 @@ class ParentConnection(IParentConnection):
         self.message_formatter = message_formatter
         self.machine_service = machine_service
 
-    def execute(self, community_id: str) -> Member | None:
+    def execute(
+        self, community_id: str, old_parent_auth_key: str | None = None
+    ) -> Member | None:
         author = self.machine_service.get_current_user(community_id)
         members = self.member_repository.get_older_members_from_community(
             community_id, author.creation_date
         )
+        members = list(
+            filter(
+                lambda member: member.authentication_key != old_parent_auth_key, members
+            )
+        )
+
         message = MessageDataclass(
             MessageHeader.REQUEST_PARENT,
             author.authentication_key,
