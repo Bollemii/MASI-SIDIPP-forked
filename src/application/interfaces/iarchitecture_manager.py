@@ -21,3 +21,7 @@ class IArchitectureManager(ABC):
     @abstractmethod
     def connect_to_parent(self, community_id: str) -> Member | None:
         """Connect to a member as parent of the community."""
+
+    @abstractmethod
+    def deconnection(self):
+        """Deconnect of all communities"""

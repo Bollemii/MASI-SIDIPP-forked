@@ -1,5 +1,6 @@
 import os
 import threading
+from src.application.architecture_manager.deconnection import Deconnection
 from src.application.architecture_manager.parent_connection import ParentConnection
 from src.application.architecture_manager.share_information import ShareInformation
 from src.application.use_cases.save_member import SaveMember
@@ -80,8 +81,15 @@ class Application:
         self.parent_connection_usecase = ParentConnection(
             self.member_repository, self.message_formatter, self.machine_service
         )
+        self.deconnection_usecase = Deconnection(
+            self.community_repository,
+            self.member_repository,
+            self.share_information_usecase,
+        )
         self.architecture_manager = ArchitectureManager(
-            self.share_information_usecase, self.parent_connection_usecase
+            self.share_information_usecase,
+            self.parent_connection_usecase,
+            self.deconnection_usecase,
         )
 
         self.create_community_usecase = CreateCommunity(
